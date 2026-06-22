@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PERDIRFORMANCE LOGI-RPP V2</title>
+    
+    <!-- Script pour masquer les avertissements de développement liés au mode "sans serveur" (Babel et Tailwind) -->
+    <script>
+        const origWarn = console.warn;
+        const origLog = console.log;
+        console.warn = function(...args) {
+            if (typeof args[0] === 'string' && (args[0].includes('cdn.tailwindcss.com') || args[0].includes('in-browser Babel'))) return;
+            origWarn.apply(console, args);
+        };
+        console.log = function(...args) {
+            if (typeof args[0] === 'string' && args[0].includes('in-browser Babel')) return;
+            origLog.apply(console, args);
+        };
+    </script>
+
+    <!-- Chargement des librairies indispensables (CDN) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Utilisation de cdnjs pour Babel afin d'éviter l'erreur 404 du fichier SourceMap (.map) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Configuration du design -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'pulse-blue': 'pulse-blue 2s infinite',
+                        'fadeIn': 'fadeIn 0.3s ease-in-out',
+                    },
+                    keyframes: {
+                        'pulse-blue': {
+                            '0%': { boxShadow: '0 0 0 0 rgba(37, 99, 235, 0.6)' },
+                            '70%': { boxShadow: '0 0 0 5px rgba(37, 99, 235, 0)' },
+                            '100%': { boxShadow: '0 0 0 0 rgba(37, 99, 235, 0)' },
+                        },
+                        'fadeIn': {
+                            'from': { opacity: '0', transform: 'translateY(5px)' },
+                            'to': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { size: A4 portrait; margin: 15mm; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans print:bg-white print:m-0">
+    <!-- Point d'ancrage de l'application -->
+    <div id="root">
+        <div style="text-align: center; padding: 50px; font-family: sans-serif; color: #1e3a8a;">
+            Chargement sécurisé de PERDIRFORMANCE LOGI-RPP V2...
+        </div>
+    </div>
+
+    <!-- Code logique de l'application -->
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- COMPOSANTS ICÔNES (SVG Intégrés) ---
+        const IconSettings = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
+        const IconCalendar = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
+        const IconUsers = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>;
+        const IconFileText = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>;
+        const IconPrinter = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>;
+        const IconBarChart3 = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 3v18h18"/><rect x="7" y="14" width="4" height="5" rx="1"/><rect x="15" y="5" width="4" height="14" rx="1"/></svg>;
+        const IconPlus = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+        const IconTrash2 = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
+        const IconEdit2 = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>;
+        const IconSave = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>;
+        const IconChevronUp = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="18 15 12 9 6 15"></polyline></svg>;
+        const IconChevronDown = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 12 15 18 9"></polyline></svg>;
+        const IconListOrdered = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>;
+        const IconHelp = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
+        const IconCopy = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
+        const IconFolder = ({ className }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>;
+
+        function App() {
+          const [activeTab, setActiveTab] = useState('config');
+          const [isLoaded, setIsLoaded] = useState(false);
+          
+          // État pour gérer ce qui doit être imprimé (programme, émargement, ou tout masquer momentanément)
+          const [printMode, setPrintMode] = useState('all');
+
+          // --- ÉTAT GLOBAL ---
+          const [schoolInfo, setSchoolInfo] = useState({
+            name: '',
+            cachet: '',
+            logoImage: null,
+            cachetImage: null
+          });
+
+          const [teachers, setTeachers] = useState([]);
+          const [rooms, setRooms] = useState([]);
+          const [classes, setClasses] = useState([]);
+
+          // --- GESTION DES RENCONTRES (ARCHIVAGE ANNUEL) ---
+          const [eventsList, setEventsList] = useState([
+            {
+              id: 1,
+              title: 'Rencontre N°1 - Semestre 1',
+              date: '',
+              selectedClasses: [], 
+              parts: [
+                {
+                  id: 1,
+                  startTime: '16:30',
+                  endTime: '17:00',
+                  title: 'Bilan et Remise des bulletins',
+                  description: "Le professeur principal, avec le concours de l'équipe pédagogique, présentera un bilan global de l'investissement et de l'attitude des élèves. À cette occasion, les bulletins seront remis aux familles.",
+                  type: 'par_classe',
+                  regroupementClasses: '',
+                  regroupementRoom: ''
+                },
+                {
+                  id: 2,
+                  startTime: '17:00',
+                  endTime: '19:30',
+                  title: 'Rencontres individuelles par discipline',
+                  description: "Les professeurs reçoivent les familles individuellement dans les salles dédiées par discipline.",
+                  type: 'par_discipline',
+                  regroupementClasses: '',
+                  regroupementRoom: ''
+                }
+              ],
+              classPlacements: [], 
+              subjectRooms: [], 
+              attendanceStats: [],
+              excludedTeachers: [] // Remplacement de l'état global par un état propre à chaque événement
+            }
+          ]);
+          const [currentEventId, setCurrentEventId] = useState(1);
+
+          // L'événement actif dérivé de la liste
+          const eventData = eventsList.find(e => e.id === currentEventId) || eventsList[0];
+          
+          // Fonction de mise à jour transparente pour le reste du code
+          const setEventData = (newData) => {
+            setEventsList(eventsList.map(e => e.id === currentEventId ? newData : e));
+          };
+
+          const [editingItem, setEditingItem] = useState(null);
+          const [statsView, setStatsView] = useState('current'); // État pour basculer entre la vue ponctuelle et la vue cumulée
+
+          // --- SAUVEGARDE AUTO ET IMPORT/EXPORT (BACKUP) ---
+          useEffect(() => {
+            try {
+              // Migration automatique des données de l'ancienne orthographe vers la nouvelle
+              const oldSavedData = localStorage.getItem('PERDIFORMANCE_RPP_DATA');
+              if (oldSavedData && !localStorage.getItem('PERDIRFORMANCE_RPP_DATA')) {
+                localStorage.setItem('PERDIRFORMANCE_RPP_DATA', oldSavedData);
+                localStorage.removeItem('PERDIFORMANCE_RPP_DATA');
+              }
+
+              const savedData = localStorage.getItem('PERDIRFORMANCE_RPP_DATA');
+              if (savedData) {
+                const parsed = JSON.parse(savedData);
+                if (parsed.schoolInfo) setSchoolInfo(parsed.schoolInfo);
+                if (parsed.teachers) setTeachers(parsed.teachers);
+                if (parsed.rooms) setRooms(parsed.rooms);
+                if (parsed.classes) setClasses(parsed.classes);
+                if (parsed.eventsList) setEventsList(parsed.eventsList);
+                if (parsed.currentEventId) setCurrentEventId(parsed.currentEventId);
+              }
+            } catch (e) {
+              console.error("Erreur lors du chargement des données", e);
+            }
+            setIsLoaded(true);
+          }, []);
+
+          useEffect(() => {
+            if (!isLoaded) return;
+            const dataToSave = { schoolInfo, teachers, rooms, classes, eventsList, currentEventId };
+            try {
+              localStorage.setItem('PERDIRFORMANCE_RPP_DATA', JSON.stringify(dataToSave));
+            } catch (e) {
+              if (e.name === 'QuotaExceededError') {
+                console.warn("Quota dépassé, sauvegarde en cache sans les images...");
+                const dataWithoutImages = { ...dataToSave, schoolInfo: { ...schoolInfo, logoImage: null, cachetImage: null } };
+                localStorage.setItem('PERDIRFORMANCE_RPP_DATA', JSON.stringify(dataWithoutImages));
+              }
+            }
+          }, [schoolInfo, teachers, rooms, classes, eventsList, currentEventId, isLoaded]);
+
+          const handleResetAll = () => {
+            if (window.confirm('⚠️ ATTENTION : Cela va effacer TOUTES vos données actuelles (classes, professeurs, salles, événements). Confirmez-vous ?')) {
+              localStorage.removeItem('PERDIRFORMANCE_RPP_DATA');
+              window.location.reload();
+            }
+          };
+
+          const handleExportBackup = () => {
+            const defaultName = `PERDIRFORMANCE_Sauvegarde_${new Date().toISOString().split('T')[0]}`;
+            let fileName = window.prompt("Nommez votre fichier de sauvegarde :", defaultName);
+            if (fileName === null) return;
+            if (fileName.trim() === '') fileName = defaultName;
+            if (!fileName.toLowerCase().endsWith('.json')) fileName += '.json';
+
+            const data = { schoolInfo, teachers, rooms, classes, eventsList, currentEventId };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.click();
+          };
+
+          const handleImportBackup = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              try {
+                const parsed = JSON.parse(event.target.result);
+                if (parsed.schoolInfo) setSchoolInfo(parsed.schoolInfo);
+                if (parsed.teachers) setTeachers(parsed.teachers);
+                if (parsed.rooms) setRooms(parsed.rooms);
+                if (parsed.classes) setClasses(parsed.classes);
+                if (parsed.eventsList) setEventsList(parsed.eventsList);
+                if (parsed.currentEventId) setCurrentEventId(parsed.currentEventId);
+                alert('Sauvegarde restaurée avec succès !');
+              } catch (err) {
+                alert('Erreur : Fichier de sauvegarde non valide.');
+              }
+            };
+            reader.readAsText(file);
+            e.target.value = null;
+          };
+
+          // Liaison automatique Classes <-> PP
+          useEffect(() => {
+            if (teachers.length > 0 && classes.some(c => !c.ppId && c.ppNameTemp)) {
+              setClasses(prev => {
+                let changed = false;
+                const next = prev.map(c => {
+                  if (!c.ppId && c.ppNameTemp) {
+                    const match = teachers.find(t => t.nom.toLowerCase() === c.ppNameTemp.toLowerCase() || c.ppNameTemp.toLowerCase().includes(t.nom.toLowerCase()));
+                    if (match) {
+                      changed = true;
+                      return { ...c, ppId: match.id, ppNameTemp: '' };
+                    }
+                  }
+                  return c;
+                });
+                return changed ? next : prev;
+              });
+            }
+          }, [teachers]);
+
+          // --- HELPERS ---
+          const formatDateFR = (dateStr) => {
+            if (!dateStr) return '';
+            const [year, month, day] = dateStr.split('-');
+            if (year && month && day) return `${day}/${month}/${year}`;
+            return dateStr;
+          };
+
+          const getTeacherName = (id) => {
+            if (!id) return 'Non assigné';
+            const t = teachers.find(t => t.id === id);
+            return t ? `${t.civ} ${t.nom}`.trim() : 'Inconnu';
+          };
+          const getClassName = (id) => classes.find(c => c.id === id)?.name || 'Inconnue';
+          const getRoomName = (id) => {
+            if (!id) return 'À définir';
+            const r = rooms.find(r => r.id === parseInt(id));
+            return r ? r.name : 'À définir';
+          };
+
+          const getAllSelectedAccompIds = () => {
+            const allIds = new Set();
+            eventData.classPlacements.forEach(p => {
+              if (p.accompIds) {
+                p.accompIds.forEach(id => allIds.add(id));
+              }
+            });
+            return Array.from(allIds);
+          };
+
+          const mapSubjectName = (rawName) => {
+            if (!rawName) return '';
+            let s = rawName.toUpperCase().trim();
+            
+            if (s.includes('L1000') || (s.includes('HIST') && s.includes('GEO'))) return 'Histoire-Géographie';
+            if (s.includes('L1300') || s.includes('MATH')) return 'Mathématiques';
+            if (s.includes('L0202') || s.includes('LETTRES MOD') || s.includes('FRANCAIS')) return 'Français';
+            if (s.includes('L0201') || s.includes('LETTRES CLAS')) return 'Lettres Classiques';
+            if (s.includes('L0422') || s.includes('ANGLAIS')) return 'Anglais';
+            if (s.includes('L0426') || s.includes('ESPAGNOL')) return 'Espagnol';
+            if (s.includes('L0421') || s.includes('ALLEMAND')) return 'Allemand';
+            if (s.includes('L0429') || s.includes('ITALIEN')) return 'Italien';
+            if (s.includes('L1500') || (s.includes('PHYS') && s.includes('CHIM'))) return 'Physique-Chimie';
+            if (s.includes('L1600') || s.includes('SVT') || (s.includes('VIE') && s.includes('TERRE'))) return 'SVT';
+            if (s.includes('L1400') || s.includes('TECHNO')) return 'Technologie';
+            if (s.includes('L1700') || s.includes('EDU MU') || s.includes('ED. MUS') || s.includes('MUSIQUE')) return 'Éducation Musicale';
+            if (s.includes('L1800') || s.includes('ARTS PLAST') || s.includes('ART PLA')) return 'Arts Plastiques';
+            if (s.includes('L1900') || s.includes('EPS') || s.includes('SPORT')) return 'EPS';
+            if (s.includes('L3000') || s.includes('DOC')) return 'Documentation';
+            if (s.includes('ULIS')) return 'ULIS';
+            if (s.includes('SEGPA')) return 'SEGPA';
+            
+            s = s.replace(/^[A-Z]\d{4}\s*/, '');
+            
+            if (s.length > 0) return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+            return rawName;
+          };
+
+          // --- IMPRESSION INTELLIGENTE ---
+          const handlePrint = (mode) => {
+            setPrintMode(mode);
+            setTimeout(() => {
+              window.print();
+              setPrintMode('all');
+            }, 100);
+          };
+
+          // --- CRUD HANDLERS ---
+          const handleAddClass = () => {
+            const newId = Date.now();
+            setClasses([{ id: newId, name: 'Nouvelle Classe', effectif: 0, ppId: '', ppNameTemp: '' }, ...classes]);
+            setEditingItem({ type: 'class', id: newId });
+          };
+
+          const updateClass = (id, field, value) => {
+            setClasses(classes.map(c => c.id === id ? { ...c, [field]: value } : c));
+          };
+
+          const handleAddTeacher = () => {
+            const newId = Date.now();
+            setTeachers([{ id: newId, civ: '', nom: 'NOUVEAU', prenom: '', discipline: '', name: 'NOUVEAU' }, ...teachers]);
+            setEditingItem({ type: 'teacher', id: newId });
+          };
+
+          const updateTeacher = (id, field, value) => {
+            setTeachers(teachers.map(t => {
+              if (t.id === id) {
+                const updated = { ...t, [field]: value };
+                if (field === 'discipline') updated.discipline = mapSubjectName(value);
+                updated.name = `${updated.civ} ${updated.nom} ${updated.prenom}`.trim();
+                return updated;
+              }
+              return t;
+            }));
+          };
+
+          const handleAddRoom = () => {
+            const newId = Date.now();
+            setRooms([{ id: newId, name: 'Nouvelle Salle' }, ...rooms]);
+            setEditingItem({ type: 'room', id: newId });
+          };
+
+          // --- IMPORT LOGIC (CSV & EXCEL) ---
+          const handleImportFile = (event, type) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const processText = (text) => {
+              const lines = text.split('\n').filter(line => line.trim() !== '');
+              
+              if (type === 'teachers') {
+                const newTeachers = [];
+                lines.forEach((line, idx) => {
+                  // Nettoyage de la ligne (retrait des guillemets et retours chariot d'Excel)
+                  let cleanLine = line.replace(/[\r"]/g, '').trim();
+                  if (!cleanLine) return;
+
+                  // Détection intelligente du séparateur (Tabulation, Point-virgule, ou Virgule)
+                  let cols = cleanLine.split(/\t|;/);
+                  if (cols.length === 1 && cleanLine.includes(',')) {
+                    cols = cleanLine.split(',');
+                  }
+                  
+                  cols = cols.map(c => c.trim()).filter(c => c !== '');
+                  if (cols.length === 0) return;
+
+                  // Ignorer intelligemment la ligne d'en-tête, peu importe comment elle s'appelle
+                  const firstCol = cols[0].toLowerCase();
+                  if (idx === 0 && (firstCol === 'civ' || firstCol.includes('civilité') || firstCol === 'nom' || firstCol.includes('professeur'))) {
+                    return; 
+                  }
+
+                  let civ = '', nom = '', prenom = '', rawDiscipline = '';
+
+                  // Heuristique d'extraction "Forcée" : on s'adapte au nombre de colonnes trouvées
+                  if (cols.length >= 4) {
+                    civ = cols[0];
+                    nom = cols[1];
+                    prenom = cols[2];
+                    rawDiscipline = cols[cols.length - 1]; // On suppose que la discipline est toujours à la fin
+                  } else if (cols.length === 3) {
+                    nom = cols[0];
+                    prenom = cols[1];
+                    rawDiscipline = cols[2];
+                  } else if (cols.length === 2) {
+                    nom = cols[0];
+                    rawDiscipline = cols[1];
+                  } else {
+                    nom = cols[0];
+                  }
+
+                  const discipline = mapSubjectName(rawDiscipline);
+                  const name = `${civ} ${nom} ${prenom}`.replace(/\s+/g, ' ').trim();
+                  
+                  // On enregistre de force si un nom a été trouvé et qu'il ne s'agit pas d'un reliquat d'en-tête
+                  if (name && !name.toLowerCase().startsWith('nom')) {
+                    newTeachers.push({ 
+                        id: Date.now() + idx, 
+                        civ, 
+                        nom: nom.toUpperCase(), 
+                        prenom, 
+                        discipline, 
+                        name 
+                    });
+                  }
+                });
+                
+                setTeachers(prev => [...prev, ...newTeachers]);
+              } else if (type === 'rooms') {
+                const newRooms = lines.map((line, idx) => {
+                  const cols = line.split(/[;,]/);
+                  return { id: Date.now() + idx, name: cols[0]?.trim() || 'Inconnue' };
+                }).filter(r => !r.name.toLowerCase().includes('salle') && r.name !== 'Inconnue');
+                setRooms(prev => [...prev, ...newRooms]);
+              } else if (type === 'classes') {
+                const newClasses = lines.map((line, idx) => {
+                  const cols = line.split(/[;,]/);
+                  return { 
+                    id: Date.now() + idx, 
+                    name: cols[0]?.trim() || 'Inconnue', 
+                    effectif: parseInt(cols[1]) || 0, 
+                    ppId: '',
+                    ppNameTemp: cols[2]?.trim() || '' 
+                  };
+                }).filter(c => !c.name.toLowerCase().includes('classe') && c.name !== 'Inconnue');
+                
+                setClasses(prev => {
+                  const combined = [...prev, ...newClasses];
+                  return combined.map(c => {
+                    if (!c.ppId && c.ppNameTemp) {
+                      const match = teachers.find(t => t.nom.toLowerCase() === c.ppNameTemp.toLowerCase() || c.ppNameTemp.toLowerCase().includes(t.nom.toLowerCase()));
+                      if (match) return { ...c, ppId: match.id, ppNameTemp: '' };
+                    }
+                    return c;
+                  });
+                });
+              }
+            };
+
+            if (file.name.endsWith('.csv')) {
+              const reader = new FileReader();
+              reader.onload = (e) => processText(e.target.result);
+              reader.readAsText(file);
+            } else if (file.name.match(/\.xlsx?$/i)) {
+              if (!window.XLSX) {
+                alert("Erreur: Bibliothèque Excel introuvable.");
+                event.target.value = null;
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = window.XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const text = window.XLSX.utils.sheet_to_csv(worksheet, { FS: ";" });
+                processText(text);
+              };
+              reader.readAsArrayBuffer(file);
+            } else {
+              alert("Format non supporté. Veuillez importer un fichier CSV ou Excel (.xls, .xlsx).");
+            }
+            event.target.value = null;
+          };
+
+          const handleImageUpload = (e, field) => {
+            const file = e.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                setSchoolInfo({ ...schoolInfo, [field]: event.target.result });
+              };
+              reader.readAsDataURL(file);
+            }
+          };
+
+          // --- RENDERERS ---
+          const renderConfigTab = () => (
+            <div className="space-y-8 animate-fadeIn">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center"><IconSettings className="w-5 h-5 mr-2 text-blue-600"/> Établissement</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom de l'établissement</label>
+                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" value={schoolInfo.name} onChange={e => setSchoolInfo({...schoolInfo, name: e.target.value})} />
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Logo de l'établissement (Image)</label>
+                      <input key={schoolInfo.logoImage ? 'logo-set' : 'logo-empty'} type="file" accept="image/*" onChange={e => handleImageUpload(e, 'logoImage')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                      {schoolInfo.logoImage && (
+                        <div className="mt-2 flex items-end gap-3">
+                          <img src={schoolInfo.logoImage} alt="Logo" className="h-16 object-contain" />
+                          <button onClick={() => setSchoolInfo({...schoolInfo, logoImage: null})} className="text-xs text-red-500 hover:text-red-700 flex items-center bg-red-50 px-2 py-1 rounded border border-red-100 transition-colors">
+                            <IconTrash2 className="w-3 h-3 mr-1"/> Retirer
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cachet / Signature (Texte libre)</label>
+                    <textarea className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" rows="3" value={schoolInfo.cachet} onChange={e => setSchoolInfo({...schoolInfo, cachet: e.target.value})} />
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Cachet Scanné (Image optionnelle)</label>
+                      <input key={schoolInfo.cachetImage ? 'cachet-set' : 'cachet-empty'} type="file" accept="image/*" onChange={e => handleImageUpload(e, 'cachetImage')} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                      {schoolInfo.cachetImage && (
+                        <div className="mt-2 flex items-end gap-3">
+                          <img src={schoolInfo.cachetImage} alt="Cachet" className="h-16 object-contain" />
+                          <button onClick={() => setSchoolInfo({...schoolInfo, cachetImage: null})} className="text-xs text-red-500 hover:text-red-700 flex items-center bg-red-50 px-2 py-1 rounded border border-red-100 transition-colors">
+                            <IconTrash2 className="w-3 h-3 mr-1"/> Retirer
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-slate-800">Classes</h2>
+                    <div className="flex gap-2">
+                      <button onClick={handleAddClass} className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-medium hover:bg-blue-100 flex items-center shadow-sm">
+                        <IconPlus className="w-3 h-3 mr-1"/> Ajouter
+                      </button>
+                      <label className="animate-pulse-blue cursor-pointer bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-bold hover:bg-blue-700 flex items-center shadow-md transition-transform hover:-translate-y-0.5">
+                        📥 Importer
+                        <input type="file" accept=".csv, .xls, .xlsx" className="hidden" onChange={(e) => handleImportFile(e, 'classes')} />
+                      </label>
+                    </div>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto pr-2 space-y-2">
+                    {classes.length === 0 && <p className="text-sm text-gray-500 italic">Aucune classe.</p>}
+                    {classes.map(c => (
+                      <div key={c.id} className="flex flex-col p-3 bg-gray-50 rounded border border-gray-100 gap-2 group">
+                        {editingItem?.type === 'class' && editingItem.id === c.id ? (
+                          <div className="flex gap-2 mb-1">
+                            <input className="flex-1 p-1 text-xs border border-gray-300 rounded focus:ring-blue-500" placeholder="Nom" value={c.name} onChange={e => updateClass(c.id, 'name', e.target.value)} />
+                            <input type="number" className="w-16 p-1 text-xs border border-gray-300 rounded focus:ring-blue-500" placeholder="Eff" value={c.effectif} onChange={e => updateClass(c.id, 'effectif', parseInt(e.target.value)||0)} />
+                            <button onClick={() => setEditingItem(null)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"><IconSave className="w-3 h-3"/></button>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-bold text-blue-800">{c.name}</span>
+                              <span className="text-xs text-gray-500 ml-2">Eff: {c.effectif}</span>
+                            </div>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => setEditingItem({type: 'class', id: c.id})}><IconEdit2 className="w-3 h-3 text-gray-500 hover:text-blue-600"/></button>
+                              <button onClick={() => { if(window.confirm('Supprimer cette classe ?')) setClasses(classes.filter(cl => cl.id !== c.id)) }}><IconTrash2 className="w-3 h-3 text-red-500 hover:text-red-700"/></button>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center text-sm mt-1">
+                          <label className="mr-2 text-gray-600 font-medium text-xs">PP :</label>
+                          <select 
+                            value={c.ppId || ''} 
+                            onChange={(e) => {
+                              const newClasses = [...classes];
+                              const idx = newClasses.findIndex(cl => cl.id === c.id);
+                              newClasses[idx].ppId = parseInt(e.target.value) || '';
+                              newClasses[idx].ppNameTemp = ''; 
+                              setClasses(newClasses);
+                            }}
+                            className="flex-1 p-1 border border-gray-300 rounded text-xs focus:ring-blue-500"
+                          >
+                            <option value="">{c.ppNameTemp ? `? À lier : ${c.ppNameTemp}` : '-- Assigner un PP --'}</option>
+                            {[...teachers].sort((a,b) => (a.nom || '').localeCompare(b.nom || '')).map(t => (
+                              <option key={t.id} value={t.id}>{t.civ} {t.nom} {t.prenom}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2 italic">*Format import: Classe; Effectif; Nom du PP</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-slate-800">Professeurs</h2>
+                    <div className="flex gap-2">
+                      <button onClick={handleAddTeacher} className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-medium hover:bg-blue-100 flex items-center shadow-sm">
+                        <IconPlus className="w-3 h-3 mr-1"/> Ajouter
+                      </button>
+                      <label className="animate-pulse-blue cursor-pointer bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-bold hover:bg-blue-700 flex items-center shadow-md transition-transform hover:-translate-y-0.5">
+                        📥 Importer
+                        <input type="file" accept=".csv, .xls, .xlsx" className="hidden" onChange={(e) => handleImportFile(e, 'teachers')} />
+                      </label>
+                    </div>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto pr-2 space-y-2">
+                    {teachers.length === 0 && <p className="text-sm text-gray-500 italic">Aucun professeur.</p>}
+                    {teachers.map(t => (
+                      <div key={t.id} className="flex flex-col p-2 bg-gray-50 rounded border border-gray-100 gap-1 group">
+                        {editingItem?.type === 'teacher' && editingItem.id === t.id ? (
+                          <div className="flex flex-col gap-1 w-full">
+                            <div className="flex gap-1">
+                              <input className="w-12 p-1 text-xs border border-gray-300 rounded focus:ring-blue-500" placeholder="Civ" value={t.civ} onChange={e => updateTeacher(t.id, 'civ', e.target.value)} />
+                              <input className="flex-1 p-1 text-xs border border-gray-300 rounded focus:ring-blue-500" placeholder="Nom" value={t.nom} onChange={e => updateTeacher(t.id, 'nom', e.target.value.toUpperCase())} />
+                              <input className="flex-1 p-1 text-xs border border-gray-300 rounded focus:ring-blue-500" placeholder="Prénom" value={t.prenom} onChange={e => updateTeacher(t.id, 'prenom', e.target.value)} />
+                            </div>
+                            <div className="flex gap-1 items-center">
+                              <input className="flex-1 p-1 text-xs border border-gray-300 rounded focus:ring-blue-500" placeholder="Discipline" value={t.discipline} onChange={e => updateTeacher(t.id, 'discipline', e.target.value)} />
+                              <button onClick={() => setEditingItem(null)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center">
+                                <IconSave className="w-3 h-3"/>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="text-sm font-medium">{t.civ} {t.nom} {t.prenom}</span>
+                              <span className="text-[10px] text-gray-500 bg-gray-200 px-2 py-1 rounded ml-2">{t.discipline}</span>
+                            </div>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => setEditingItem({type: 'teacher', id: t.id})}><IconEdit2 className="w-3 h-3 text-gray-500 hover:text-blue-600"/></button>
+                              <button onClick={() => { if(window.confirm('Supprimer ce professeur ?')) setTeachers(teachers.filter(tr => tr.id !== t.id)) }}><IconTrash2 className="w-3 h-3 text-red-500 hover:text-red-700"/></button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2 italic">*Format import: Civ; NOM; PRENOM; DISCIPLINE</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-slate-800">Salles</h2>
+                    <div className="flex gap-2">
+                      <button onClick={handleAddRoom} className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-medium hover:bg-blue-100 flex items-center shadow-sm">
+                        <IconPlus className="w-3 h-3 mr-1"/> Ajouter
+                      </button>
+                      <label className="animate-pulse-blue cursor-pointer bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-bold hover:bg-blue-700 flex items-center shadow-md transition-transform hover:-translate-y-0.5">
+                        📥 Importer
+                        <input type="file" accept=".csv, .xls, .xlsx" className="hidden" onChange={(e) => handleImportFile(e, 'rooms')} />
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {rooms.length === 0 && <p className="text-sm text-gray-500 italic w-full">Aucune salle.</p>}
+                    {rooms.map(r => (
+                      editingItem?.type === 'room' && editingItem.id === r.id ? (
+                        <div key={r.id} className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md border border-gray-300">
+                          <input className="w-20 p-1 text-xs border border-gray-300 rounded focus:ring-blue-500" value={r.name} onChange={e => setRooms(rooms.map(rm => rm.id === r.id ? {...rm, name: e.target.value} : rm))} />
+                          <button onClick={() => setEditingItem(null)} className="p-1 text-blue-600 hover:text-blue-800"><IconSave className="w-3 h-3"/></button>
+                        </div>
+                      ) : (
+                        <span key={r.id} className="group flex items-center bg-gray-100 text-gray-700 px-3 py-1 rounded-md text-sm border border-gray-200">
+                          {r.name}
+                          <div className="ml-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setEditingItem({type: 'room', id: r.id})}><IconEdit2 className="w-3 h-3 text-gray-500 hover:text-blue-600"/></button>
+                            <button onClick={() => { if(window.confirm('Supprimer cette salle ?')) setRooms(rooms.filter(rm => rm.id !== r.id)) }}><IconTrash2 className="w-3 h-3 text-red-500 hover:text-red-700"/></button>
+                          </div>
+                        </span>
+                      )
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2 w-full italic">*Format import: Nom de la salle</p>
+                </div>
+              </div>
+            </div>
+          );
+
+          const renderEventTab = () => {
+            const assignedRoomIdsClassGrid = new Set(
+              (eventData.classPlacements || []).map(p => p.roomId).filter(Boolean)
+            );
+            const assignedRoomIdsSubjectGrid = new Set(
+              (eventData.subjectRooms || []).map(sr => sr.roomId).filter(Boolean)
+            );
+
+            return (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-slate-800 flex items-center">
+                      <IconListOrdered className="w-5 h-5 mr-2 text-blue-600"/> Pilote des Rencontres
+                    </h2>
+                    <button 
+                      onClick={() => {
+                        const newEvent = {
+                          id: Date.now(),
+                          title: 'Nouvelle Rencontre',
+                          date: '',
+                          selectedClasses: [],
+                          parts: [
+                            { id: Date.now() + 1, startTime: '16:30', endTime: '19:30', title: 'Rencontre Parents-Professeurs', description: '', type: 'par_classe', regroupementClasses: '', regroupementRoom: '' }
+                          ],
+                          classPlacements: [],
+                          subjectRooms: [],
+                          attendanceStats: [],
+                          excludedTeachers: []
+                        };
+                        setEventsList([...eventsList, newEvent]);
+                        setCurrentEventId(newEvent.id);
+                      }}
+                      className="text-xs bg-indigo-50 text-indigo-700 px-3 py-2 rounded font-medium hover:bg-indigo-100 flex items-center shadow-sm transition"
+                    >
+                      <IconPlus className="w-4 h-4 mr-1"/> Ajouter une rencontre
+                    </button>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    {eventsList.map((evt, index) => (
+                      <div key={evt.id} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${currentEventId === evt.id ? 'border-blue-400 bg-blue-50/50 shadow-sm' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'}`}>
+                        <div className="flex-1 cursor-pointer font-medium text-sm flex items-center" onClick={() => setCurrentEventId(evt.id)}>
+                          <div className={`w-3 h-3 rounded-full mr-3 ${currentEventId === evt.id ? 'bg-emerald-600 shadow-sm' : 'bg-gray-300'}`}></div>
+                          <span className={currentEventId === evt.id ? 'text-emerald-900 font-bold' : 'text-gray-700'}>
+                            {evt.title || 'Rencontre sans titre'} {evt.date ? `(le ${formatDateFR(evt.date)})` : ''}
+                          </span>
+                        </div>
+                        
+                        <div className="flex gap-1 ml-4 items-center">
+                          <button 
+                            onClick={() => {
+                              if (index === 0) return;
+                              const newList = [...eventsList];
+                              [newList[index - 1], newList[index]] = [newList[index], newList[index - 1]];
+                              setEventsList(newList);
+                            }}
+                            disabled={index === 0}
+                            className={`p-1.5 rounded ${index === 0 ? 'text-gray-300' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-100'}`}
+                            title="Monter"
+                          >
+                            <IconChevronUp className="w-4 h-4"/>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (index === eventsList.length - 1) return;
+                              const newList = [...eventsList];
+                              [newList[index + 1], newList[index]] = [newList[index], newList[index + 1]];
+                              setEventsList(newList);
+                            }}
+                            disabled={index === eventsList.length - 1}
+                            className={`p-1.5 rounded ${index === eventsList.length - 1 ? 'text-gray-300' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-100'}`}
+                            title="Descendre"
+                          >
+                            <IconChevronDown className="w-4 h-4"/>
+                          </button>
+                          <div className="w-px h-5 bg-gray-300 mx-2"></div>
+                          <button 
+                            onClick={() => {
+                              const newEventId = Date.now();
+                              // Copie profonde pour ne pas lier les deux événements
+                              const duplicatedEvent = JSON.parse(JSON.stringify(evt));
+                              
+                              duplicatedEvent.id = newEventId;
+                              duplicatedEvent.title = evt.title + ' (Copie)';
+                              duplicatedEvent.attendanceStats = []; // On réinitialise les statistiques pour la nouvelle rencontre
+                              
+                              // On renouvelle les identifiants internes pour React et on libère les salles/profs
+                              if (duplicatedEvent.parts) {
+                                duplicatedEvent.parts = duplicatedEvent.parts.map((p, i) => ({
+                                  ...p, 
+                                  id: newEventId + 1000 + i,
+                                  regroupementRoom: '' // Libération de la salle de regroupement
+                                }));
+                              }
+                              if (duplicatedEvent.subjectRooms) {
+                                duplicatedEvent.subjectRooms = duplicatedEvent.subjectRooms.map((sr, i) => ({
+                                  ...sr, 
+                                  id: newEventId + 2000 + i,
+                                  roomId: '', // Libération des salles par discipline
+                                  teacherIds: [] // Libération des professeurs associés
+                                }));
+                              }
+                              if (duplicatedEvent.classPlacements) {
+                                duplicatedEvent.classPlacements = duplicatedEvent.classPlacements.map(cp => ({
+                                  ...cp,
+                                  roomId: '', // Libération des salles par classe
+                                  accompIds: [], // Libération des accompagnateurs
+                                  substitutePpId: '' // Libération des remplaçants du PP
+                                }));
+                              }
+                              duplicatedEvent.excludedTeachers = []; // Libération de l'émargement (tout le monde est présent)
+                              
+                              const newList = [...eventsList];
+                              // On insère la copie juste après l'original
+                              newList.splice(index + 1, 0, duplicatedEvent);
+                              setEventsList(newList);
+                              setCurrentEventId(newEventId);
+                            }}
+                            className="p-1.5 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 mr-1"
+                            title="Dupliquer la rencontre"
+                          >
+                            <IconCopy className="w-4 h-4"/>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (eventsList.length === 1) {
+                                alert('Vous devez conserver au moins une rencontre dans le logiciel.');
+                                return;
+                              }
+                              if (window.confirm('Voulez-vous vraiment supprimer cet événement et toutes ses données associées (statistiques incluses) ?')) {
+                                const newList = eventsList.filter(e => e.id !== evt.id);
+                                setEventsList(newList);
+                                if (currentEventId === evt.id) setCurrentEventId(newList[0].id);
+                              }
+                            }}
+                            className="p-1.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50"
+                            title="Supprimer la rencontre"
+                          >
+                            <IconTrash2 className="w-4 h-4"/>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center"><IconCalendar className="w-5 h-5 mr-2 text-blue-600"/> Informations de l'événement en cours</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Titre de l'événement</label>
+                      <input type="text" className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 font-bold" value={eventData.title} onChange={e => setEventData({...eventData, title: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                      <input type="date" className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" value={eventData.date} onChange={e => setEventData({...eventData, date: e.target.value})} />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Classes concernées</label>
+                    <div className="flex flex-wrap gap-2">
+                      {classes.length === 0 && <span className="text-sm text-gray-400 italic">Aucune classe importée pour le moment.</span>}
+                      {classes.map(c => {
+                        const isSelected = eventData.selectedClasses.includes(c.id);
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => {
+                              let newSelection = isSelected 
+                                ? eventData.selectedClasses.filter(id => id !== c.id)
+                                : [...eventData.selectedClasses, c.id];
+                              
+                              if (!isSelected) {
+                                // Tri automatique intelligent à l'ajout (ex: 601 avant 501)
+                                newSelection.sort((idA, idB) => {
+                                  const nameA = (classes.find(cls => cls.id === idA)?.name || '').trim();
+                                  const nameB = (classes.find(cls => cls.id === idB)?.name || '').trim();
+                                  const matchA = nameA.match(/^(\d)/);
+                                  const matchB = nameB.match(/^(\d)/);
+                                  if (matchA && matchB) {
+                                      const levelA = parseInt(matchA[1], 10);
+                                      const levelB = parseInt(matchB[1], 10);
+                                      if (levelA !== levelB) return levelB - levelA; // ex: 6 avant 5
+                                  }
+                                  return nameA.localeCompare(nameB, 'fr', { numeric: true });
+                                });
+                              }
+                              setEventData({...eventData, selectedClasses: newSelection});
+                            }}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isSelected ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                          >
+                            {c.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-slate-800 flex items-center"><IconCalendar className="w-5 h-5 mr-2 text-blue-600"/> Déroulement (Étapes)</h2>
+                    <button 
+                      onClick={() => {
+                        const newParts = [...eventData.parts, { id: Date.now(), startTime: '', endTime: '', title: 'Nouvelle étape', description: '', type: 'regroupement', regroupementClasses: '', regroupementRoom: '' }];
+                        setEventData({...eventData, parts: newParts});
+                      }}
+                      className="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded font-medium hover:bg-blue-100 flex items-center shadow-sm"
+                    >
+                      <IconPlus className="w-4 h-4 mr-1"/> Ajouter une étape
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    {eventData.parts.length === 0 && <p className="text-sm text-gray-500 italic text-center p-4 bg-gray-50 rounded">Aucune étape définie pour le moment.</p>}
+                    {eventData.parts.map((part, index) => (
+                      <div key={part.id} className="border border-blue-100 bg-blue-50/30 p-4 rounded-lg relative group transition-all hover:shadow-sm hover:border-blue-300">
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-blue-50 rounded-md shadow-sm border border-blue-100 p-1 z-10">
+                          <button 
+                            onClick={() => {
+                              if (index === 0) return;
+                              const newParts = [...eventData.parts];
+                              [newParts[index - 1], newParts[index]] = [newParts[index], newParts[index - 1]];
+                              setEventData({...eventData, parts: newParts});
+                            }}
+                            disabled={index === 0}
+                            className={`p-1 rounded ${index === 0 ? 'text-gray-300' : 'text-blue-600 hover:bg-blue-200'}`}
+                            title="Monter l'étape"
+                          >
+                            <IconChevronUp className="w-4 h-4"/>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (index === eventData.parts.length - 1) return;
+                              const newParts = [...eventData.parts];
+                              [newParts[index + 1], newParts[index]] = [newParts[index], newParts[index + 1]];
+                              setEventData({...eventData, parts: newParts});
+                            }}
+                            disabled={index === eventData.parts.length - 1}
+                            className={`p-1 rounded ${index === eventData.parts.length - 1 ? 'text-gray-300' : 'text-blue-600 hover:bg-blue-200'}`}
+                            title="Descendre l'étape"
+                          >
+                            <IconChevronDown className="w-4 h-4"/>
+                          </button>
+                          <div className="w-px bg-blue-200 mx-1"></div>
+                          <button 
+                            onClick={() => {
+                              const newParts = eventData.parts.filter(p => p.id !== part.id);
+                              setEventData({...eventData, parts: newParts});
+                            }}
+                            className="p-1 rounded text-red-500 hover:bg-red-100 hover:text-red-700"
+                            title="Supprimer l'étape"
+                          >
+                            <IconTrash2 className="w-4 h-4"/>
+                          </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 pr-28">
+                          <div>
+                            <label className="block text-xs text-gray-500 font-bold mb-1">Heure début</label>
+                            <input type="time" value={part.startTime} onChange={e => {
+                              const newParts = [...eventData.parts];
+                              newParts[index].startTime = e.target.value;
+                              setEventData({...eventData, parts: newParts});
+                            }} className="w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-blue-500"/>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 font-bold mb-1">Heure fin</label>
+                            <input type="time" value={part.endTime} onChange={e => {
+                              const newParts = [...eventData.parts];
+                              newParts[index].endTime = e.target.value;
+                              setEventData({...eventData, parts: newParts});
+                            }} className="w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-blue-500"/>
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-xs text-gray-500 font-bold mb-1">Titre de l'étape</label>
+                            <input type="text" value={part.title} onChange={e => {
+                              const newParts = [...eventData.parts];
+                              newParts[index].title = e.target.value;
+                              setEventData({...eventData, parts: newParts});
+                            }} className="w-full p-1.5 border border-gray-300 rounded text-sm font-bold text-blue-900 focus:ring-blue-500"/>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+                          <div>
+                            <label className="block text-xs text-gray-500 font-bold mb-1">Format de l'étape</label>
+                            <select 
+                              value={part.type || 'regroupement'} 
+                              onChange={e => {
+                                const newParts = [...eventData.parts];
+                                newParts[index].type = e.target.value;
+                                setEventData({...eventData, parts: newParts});
+                              }} 
+                              className="w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-blue-500 bg-white"
+                            >
+                              <option value="regroupement">Regroupement ciblé</option>
+                              <option value="par_classe">Rencontre par Classe (PP)</option>
+                              <option value="par_discipline">Rencontre par Discipline</option>
+                            </select>
+                          </div>
+                          <div className="md:col-span-3">
+                            <label className="block text-xs text-gray-500 font-bold mb-1">Texte explicatif pour les parents</label>
+                            <textarea value={part.description} onChange={e => {
+                              const newParts = [...eventData.parts];
+                              newParts[index].description = e.target.value;
+                              setEventData({...eventData, parts: newParts});
+                            }} className="w-full p-1.5 border border-gray-300 rounded text-sm focus:ring-blue-500" rows="1"/>
+                          </div>
+                        </div>
+
+                        {part.type === 'regroupement' && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 p-3 bg-blue-100/40 rounded border border-blue-200">
+                            <div>
+                              <label className="block text-xs text-blue-800 font-bold mb-1">Classes concernées</label>
+                              <input type="text" placeholder="Ex: Classes de 6ème et 5ème" value={part.regroupementClasses || ''} onChange={e => {
+                                const newParts = [...eventData.parts];
+                                newParts[index].regroupementClasses = e.target.value;
+                                setEventData({...eventData, parts: newParts});
+                              }} className="w-full p-1.5 border border-blue-300 rounded text-sm focus:ring-blue-500"/>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-blue-800 font-bold mb-1">Salle (Liste déroulante)</label>
+                              <select 
+                                value={part.regroupementRoom || ''} 
+                                onChange={e => {
+                                  const newParts = [...eventData.parts];
+                                  newParts[index].regroupementRoom = e.target.value;
+                                  setEventData({...eventData, parts: newParts});
+                                }} 
+                                className="w-full p-1.5 border border-blue-300 rounded text-sm focus:ring-blue-500 bg-white"
+                              >
+                                <option value="">-- Choisir une salle --</option>
+                                {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-visible">
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <h2 className="text-lg font-semibold text-slate-800">Grille : Salles par Classe (PP)</h2>
+                        <span className="text-xs text-gray-400">Pour le format "Rencontre par Classe"</span>
+                      </div>
+                      {eventData.selectedClasses.length > 1 && (
+                        <button 
+                          onClick={() => {
+                            const sortedClasses = [...eventData.selectedClasses].sort((idA, idB) => {
+                              const nameA = (classes.find(cls => cls.id === idA)?.name || '').trim();
+                              const nameB = (classes.find(cls => cls.id === idB)?.name || '').trim();
+                              const matchA = nameA.match(/^(\d)/);
+                              const matchB = nameB.match(/^(\d)/);
+                              if (matchA && matchB) {
+                                  const levelA = parseInt(matchA[1], 10);
+                                  const levelB = parseInt(matchB[1], 10);
+                                  if (levelA !== levelB) return levelB - levelA; 
+                              }
+                              return nameA.localeCompare(nameB, 'fr', { numeric: true });
+                            });
+                            setEventData({...eventData, selectedClasses: sortedClasses});
+                          }}
+                          className="text-xs bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded font-bold hover:bg-indigo-200 shadow-sm transition flex items-center"
+                          title="Trier automatiquement les classes (6ème avant 5ème...)"
+                        >
+                          🪄 Trier auto.
+                        </button>
+                      )}
+                    </div>
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-gray-50 text-gray-600 border-b">
+                        <tr><th className="p-2">Classe</th><th className="p-2 w-1/4">PP</th><th className="p-2 w-1/4">Salle</th><th className="p-2 w-1/3">Accompagnateurs (Max 3)</th><th className="p-2 w-12 text-center">Actions</th></tr>
+                      </thead>
+                      <tbody>
+                        {eventData.selectedClasses.length === 0 && <tr><td colSpan="5" className="text-center p-4 text-gray-400 italic">Veuillez sélectionner des classes ci-dessus</td></tr>}
+                        {eventData.selectedClasses.map((cid, idx) => {
+                          const placement = eventData.classPlacements.find(p => p.classId === cid) || { classId: cid, accompIds: [] };
+                          const classe = classes.find(c => c.id === cid);
+                          const currentAccompIds = placement.accompIds || [];
+                          const allUsedAccomp = getAllSelectedAccompIds();
+
+                          return (
+                            <tr key={cid} className="border-b border-gray-100 hover:bg-gray-50">
+                              <td className="p-2 font-bold align-top">{classe?.name}</td>
+                              <td className="p-2 align-top">
+                                <div className="font-medium text-blue-800">{getTeacherName(classe?.ppId)}</div>
+                                <div className="mt-1 flex items-center text-[10px] md:text-xs">
+                                  <select
+                                    value={placement.substitutePpId || ''}
+                                    onChange={(e) => {
+                                      const val = e.target.value ? parseInt(e.target.value) : '';
+                                      const newPlacements = [...eventData.classPlacements];
+                                      const idxPlacement = newPlacements.findIndex(p => p.classId === cid);
+                                      if (idxPlacement >= 0) {
+                                        newPlacements[idxPlacement].substitutePpId = val;
+                                      } else {
+                                        newPlacements.push({ classId: cid, roomId: '', accompIds: [], substitutePpId: val });
+                                      }
+                                      setEventData({...eventData, classPlacements: newPlacements});
+                                    }}
+                                    className="w-full max-w-[140px] p-1 border border-gray-300 rounded bg-white focus:ring-blue-500"
+                                  >
+                                    <option value="">Remplaçant si absent...</option>
+                                    {[...teachers].sort((a,b) => (a.nom || '').localeCompare(b.nom || '')).map(t => (
+                                      <option key={t.id} value={t.id}>{t.civ} {t.nom}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </td>
+                              <td className="p-2 align-top">
+                                <select
+                                  value={placement.roomId || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value ? parseInt(e.target.value) : '';
+                                    const newPlacements = [...eventData.classPlacements];
+                                    const idxPlacement = newPlacements.findIndex(p => p.classId === cid);
+                                    if (idxPlacement >= 0) newPlacements[idxPlacement].roomId = val;
+                                    else newPlacements.push({ classId: cid, roomId: val, accompIds: [] });
+                                    setEventData({...eventData, classPlacements: newPlacements});
+                                  }}
+                                  className="w-full border border-gray-300 p-1 rounded focus:outline-none focus:border-blue-500 bg-white"
+                                >
+                                  <option value="">-- Salle --</option>
+                                  {rooms.map(r => {
+                                    const isAssigned = assignedRoomIdsClassGrid.has(r.id) && placement.roomId !== r.id;
+                                    return (
+                                      <option key={r.id} value={r.id} disabled={isAssigned} className={isAssigned ? "text-gray-400" : ""}>
+                                        {r.name} {isAssigned ? '(Occupée)' : ''}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              </td>
+                              <td className="p-2 align-top">
+                                <div className="flex flex-wrap gap-1 mb-1">
+                                  {currentAccompIds.map(tId => (
+                                    <span key={tId} className="bg-blue-100 text-blue-800 text-[10px] px-2 py-1 rounded flex items-center shadow-sm">
+                                      {getTeacherName(tId)}
+                                      <button 
+                                        onClick={() => {
+                                          const newPlacements = [...eventData.classPlacements];
+                                          const idxPlacement = newPlacements.findIndex(p => p.classId === cid);
+                                          newPlacements[idxPlacement].accompIds = newPlacements[idxPlacement].accompIds.filter(id => id !== tId);
+                                          setEventData({...eventData, classPlacements: newPlacements});
+                                        }} 
+                                        className="ml-1 text-blue-600 hover:text-blue-900 font-bold"
+                                      >
+                                        &times;
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                                {currentAccompIds.length < 3 && (
+                                  <select
+                                    value=""
+                                    onChange={(e) => {
+                                      if(!e.target.value) return;
+                                      const tId = parseInt(e.target.value);
+                                      const newPlacements = [...eventData.classPlacements];
+                                      const idxPlacement = newPlacements.findIndex(p => p.classId === cid);
+                                      if (idxPlacement >= 0) {
+                                        newPlacements[idxPlacement].accompIds = [...(newPlacements[idxPlacement].accompIds || []), tId];
+                                      } else {
+                                        newPlacements.push({ classId: cid, roomId: '', accompIds: [tId] });
+                                      }
+                                      setEventData({...eventData, classPlacements: newPlacements});
+                                    }}
+                                    className="w-full p-1 border border-gray-300 rounded text-xs focus:ring-blue-500 bg-white text-gray-500"
+                                  >
+                                    <option value="">+ Ajouter un prof...</option>
+                                    {[...teachers]
+                                      .filter(t => !allUsedAccomp.includes(t.id)) // Exclusivité
+                                      .sort((a,b) => (a.nom || '').localeCompare(b.nom || ''))
+                                      .map(t => (
+                                        <option key={t.id} value={t.id}>{t.civ} {t.nom}</option>
+                                    ))}
+                                  </select>
+                                )}
+                              </td>
+                              <td className="p-2 align-top">
+                                <div className="flex flex-col items-center gap-1">
+                                  <button 
+                                    onClick={() => {
+                                      if (idx === 0) return;
+                                      const newSelectedClasses = [...eventData.selectedClasses];
+                                      [newSelectedClasses[idx - 1], newSelectedClasses[idx]] = [newSelectedClasses[idx], newSelectedClasses[idx - 1]];
+                                      setEventData({...eventData, selectedClasses: newSelectedClasses});
+                                    }}
+                                    disabled={idx === 0}
+                                    className={`p-1 rounded transition-colors ${idx === 0 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                    title="Monter"
+                                  >
+                                    <IconChevronUp className="w-4 h-4"/>
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      if (idx === eventData.selectedClasses.length - 1) return;
+                                      const newSelectedClasses = [...eventData.selectedClasses];
+                                      [newSelectedClasses[idx + 1], newSelectedClasses[idx]] = [newSelectedClasses[idx], newSelectedClasses[idx + 1]];
+                                      setEventData({...eventData, selectedClasses: newSelectedClasses});
+                                    }}
+                                    disabled={idx === eventData.selectedClasses.length - 1}
+                                    className={`p-1 rounded transition-colors ${idx === eventData.selectedClasses.length - 1 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                    title="Descendre"
+                                  >
+                                    <IconChevronDown className="w-4 h-4"/>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-visible">
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <h2 className="text-lg font-semibold text-slate-800">Grille : Salles par Discipline</h2>
+                        <span className="text-xs text-gray-400">Pour le format "Rencontre par Discipline"</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            if(eventData.subjectRooms.length > 0 && !window.confirm('Attention, cela va remplacer votre liste actuelle. Continuer ?')) return;
+                            
+                            const disciplinesMap = {};
+                            teachers.forEach(t => {
+                              const disc = t.discipline ? t.discipline.trim() : '';
+                              if (!disc || disc.toLowerCase() === 'non assigné') return;
+                              if (!disciplinesMap[disc]) disciplinesMap[disc] = [];
+                              disciplinesMap[disc].push(t.id);
+                            });
+
+                            let newSubjectRooms = Object.keys(disciplinesMap).map((disc, idx) => ({
+                              id: Date.now() + idx,
+                              subject: disc,
+                              teacherIds: disciplinesMap[disc],
+                              roomId: ''
+                            }));
+
+                            // --- TRI INTELLIGENT PAR DÉFAUT DES MATIÈRES ---
+                            const getSubjectWeight = (subject) => {
+                                const s = subject.toLowerCase();
+                                if (s.includes('math')) return 1;
+                                if (s.includes('fran') || s.includes('lettre')) return 2;
+                                if (s.includes('hist') || s.includes('géo') || s.includes('hg')) return 3;
+                                if (s.includes('angl')) return 4;
+                                if (s.includes('esp')) return 5;
+                                if (s.includes('phys') || s.includes('chim')) return 6;
+                                if (s.includes('svt') || s.includes('vie')) return 7;
+                                if (s.includes('tech')) return 8;
+                                if (s.includes('musiq') || s.includes('édu') || s.includes('edu mu')) return 9;
+                                if (s.includes('art') || s.includes('plast')) return 10;
+                                if (s.includes('eps') || s.includes('sport')) return 11;
+                                return 99; // Les autres matières viendront se placer à la fin
+                            };
+
+                            newSubjectRooms.sort((a, b) => getSubjectWeight(a.subject) - getSubjectWeight(b.subject));
+
+                            setEventData({...eventData, subjectRooms: newSubjectRooms});
+                          }}
+                          className="text-xs bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded font-bold hover:bg-indigo-200 shadow-sm transition flex items-center"
+                          title="Créer automatiquement la liste à partir des disciplines des professeurs"
+                        >
+                          🪄 Générer auto.
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const newId = Date.now();
+                            setEventData({...eventData, subjectRooms: [...eventData.subjectRooms, {id: newId, subject: '', teacherIds: [], roomId: ''}]});
+                          }} 
+                          className="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded font-medium hover:bg-blue-100 shadow-sm transition"
+                        >
+                          <IconPlus className="w-3 h-3 mr-1"/> Ajouter
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <datalist id="disciplines-list">
+                      {Array.from(new Set(teachers.map(t => t.discipline?.trim()).filter(Boolean))).map(d => <option key={d} value={d} />)}
+                    </datalist>
+
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-gray-50 text-gray-600 border-b">
+                        <tr><th className="p-2 w-1/4">Champ/Discipline</th><th className="p-2">Professeurs associés</th><th className="p-2 w-1/4">Salle</th><th className="p-2 w-12 text-center">Actions</th></tr>
+                      </thead>
+                      <tbody>
+                        {eventData.subjectRooms.length === 0 && <tr><td colSpan="4" className="text-center p-4 text-gray-400 italic">Aucune discipline définie.</td></tr>}
+                        {eventData.subjectRooms.map((sr, idx) => (
+                          <tr key={sr.id || idx} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="p-2 align-top">
+                              <input 
+                                list="disciplines-list"
+                                type="text" 
+                                value={sr.subject} 
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const newSubjects = [...eventData.subjectRooms];
+                                  newSubjects[idx].subject = val;
+                                  
+                                  // Auto-association
+                                  if ((!newSubjects[idx].teacherIds || newSubjects[idx].teacherIds.length === 0) && val.trim() !== '') {
+                                    const matchingTeachers = teachers.filter(t => t.discipline?.trim().toLowerCase() === val.trim().toLowerCase());
+                                    if (matchingTeachers.length > 0) {
+                                      newSubjects[idx].teacherIds = matchingTeachers.map(t => t.id);
+                                    }
+                                  }
+
+                                  setEventData({...eventData, subjectRooms: newSubjects});
+                                }}
+                                className="w-full border border-gray-300 p-1 rounded font-semibold focus:outline-none focus:border-blue-500 bg-white" 
+                                placeholder="Ex: Maths"
+                              />
+                            </td>
+                            <td className="p-2 align-top">
+                              <div className="flex flex-wrap gap-1 mb-1">
+                                {(sr.teacherIds || []).map(tId => (
+                                  <span key={tId} className="bg-sky-50 text-sky-800 border border-sky-200 text-[10px] px-2 py-1 rounded flex items-center shadow-sm">
+                                    {getTeacherName(tId)}
+                                    <button 
+                                      onClick={() => {
+                                        const newSubjects = [...eventData.subjectRooms];
+                                        newSubjects[idx].teacherIds = newSubjects[idx].teacherIds.filter(id => id !== tId);
+                                        setEventData({...eventData, subjectRooms: newSubjects});
+                                      }} 
+                                      className="ml-1 text-sky-500 hover:text-sky-800 font-bold"
+                                    >
+                                      &times;
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                              <select
+                                value=""
+                                onChange={(e) => {
+                                  if(!e.target.value) return;
+                                  const tId = parseInt(e.target.value);
+                                  const newSubjects = [...eventData.subjectRooms];
+                                  newSubjects[idx].teacherIds = [...(newSubjects[idx].teacherIds || []), tId];
+                                  setEventData({...eventData, subjectRooms: newSubjects});
+                                }}
+                                className="w-full p-1 border border-gray-300 rounded text-xs focus:ring-blue-500 bg-white text-gray-500"
+                              >
+                                <option value="">+ Ajouter un prof...</option>
+                                {[...teachers]
+                                  .filter(t => !(sr.teacherIds || []).includes(t.id))
+                                  .sort((a,b) => (a.nom || '').localeCompare(b.nom || ''))
+                                  .map(t => (
+                                    <option key={t.id} value={t.id}>{t.civ} {t.nom}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="p-2 align-top">
+                              <select
+                                value={sr.roomId || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value ? parseInt(e.target.value) : '';
+                                  const newSubjects = [...eventData.subjectRooms];
+                                  newSubjects[idx].roomId = val;
+                                  setEventData({...eventData, subjectRooms: newSubjects});
+                                }}
+                                className="w-full border border-gray-300 p-1 rounded focus:outline-none focus:border-blue-500 bg-white"
+                              >
+                                <option value="">-- Salle --</option>
+                                {rooms.map(r => {
+                                  const isAssigned = assignedRoomIdsSubjectGrid.has(r.id) && sr.roomId !== r.id;
+                                  return (
+                                    <option key={r.id} value={r.id} disabled={isAssigned} className={isAssigned ? "text-gray-400" : ""}>
+                                      {r.name} {isAssigned ? '(Occupée)' : ''}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            </td>
+                            <td className="p-2 align-top">
+                              <div className="flex flex-col items-center gap-1">
+                                <button 
+                                  onClick={() => {
+                                    if (idx === 0) return;
+                                    const newSubjects = [...eventData.subjectRooms];
+                                    [newSubjects[idx - 1], newSubjects[idx]] = [newSubjects[idx], newSubjects[idx - 1]];
+                                    setEventData({...eventData, subjectRooms: newSubjects});
+                                  }}
+                                  disabled={idx === 0}
+                                  className={`p-1 rounded transition-colors ${idx === 0 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                  title="Monter"
+                                >
+                                  <IconChevronUp className="w-4 h-4"/>
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    if (idx === eventData.subjectRooms.length - 1) return;
+                                    const newSubjects = [...eventData.subjectRooms];
+                                    [newSubjects[idx + 1], newSubjects[idx]] = [newSubjects[idx], newSubjects[idx + 1]];
+                                    setEventData({...eventData, subjectRooms: newSubjects});
+                                  }}
+                                  disabled={idx === eventData.subjectRooms.length - 1}
+                                  className={`p-1 rounded transition-colors ${idx === eventData.subjectRooms.length - 1 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                  title="Descendre"
+                                >
+                                  <IconChevronDown className="w-4 h-4"/>
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    const newSubjects = eventData.subjectRooms.filter((_, i) => i !== idx);
+                                    setEventData({...eventData, subjectRooms: newSubjects});
+                                  }}
+                                  className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 mt-1 transition-colors"
+                                  title="Supprimer"
+                                >
+                                  <IconTrash2 className="w-4 h-4"/>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          };
+
+          const renderEmargementTab = () => {
+            const excluded = eventData.excludedTeachers || [];
+
+            return (
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-fadeIn">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-slate-800 flex items-center"><IconFileText className="w-5 h-5 mr-2 text-blue-600"/> Liste d'émargement pour l'événement</h2>
+                    <p className="text-sm text-gray-500 mt-1">Événement ciblé : <span className="font-bold">{eventData.title || 'Sans titre'}</span></p>
+                    <p className="text-xs text-gray-500 mt-1">Sélectionnez/désélectionnez les professeurs attendus pour cette rencontre spécifique.</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {teachers.length === 0 && <p className="col-span-full text-gray-400 italic">Veuillez d'abord importer une liste de professeurs dans Configuration.</p>}
+                  {teachers.map((t) => {
+                    const isSelected = !excluded.includes(t.id);
+                    return (
+                      <label key={t.id} className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'bg-blue-50 border-blue-200 shadow-sm' : 'bg-white border-gray-200 opacity-60'}`}>
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 text-blue-600 rounded border-gray-300 mr-3 focus:ring-blue-500"
+                          checked={isSelected}
+                          onChange={() => {
+                            let newExcluded = [...excluded];
+                            if (isSelected) {
+                              newExcluded.push(t.id);
+                            } else {
+                              newExcluded = newExcluded.filter(id => id !== t.id);
+                            }
+                            setEventData({...eventData, excludedTeachers: newExcluded});
+                          }}
+                        />
+                        <span className="text-sm font-medium text-gray-700">{t.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          };
+
+          const renderStatsTab = () => {
+            // Calculs pour la rencontre en cours
+            let totalPresents = 0;
+            let totalEffectif = 0;
+            const currentStats = eventData.attendanceStats || [];
+
+            // Calculs pour le bilan cumulé (Toutes les rencontres)
+            const cumulatedStats = classes.map(c => {
+              let totalExpected = 0;
+              let totalPresentsCumul = 0;
+              let participationCount = 0;
+
+              eventsList.forEach(evt => {
+                if (evt.selectedClasses.includes(c.id)) {
+                  participationCount++;
+                  totalExpected += c.effectif;
+                  const stat = (evt.attendanceStats || []).find(s => s.classId === c.id);
+                  if (stat) {
+                    totalPresentsCumul += parseInt(stat.presents) || 0;
+                  }
+                }
+              });
+
+              return {
+                ...c,
+                participationCount,
+                totalExpected,
+                totalPresentsCumul,
+                percentage: totalExpected > 0 ? ((totalPresentsCumul / totalExpected) * 100).toFixed(1) : 0
+              };
+            }).filter(c => c.participationCount > 0);
+
+            let globalCumulExpected = 0;
+            let globalCumulPresents = 0;
+            cumulatedStats.forEach(c => {
+              globalCumulExpected += c.totalExpected;
+              globalCumulPresents += c.totalPresentsCumul;
+            });
+            const globalCumulPercentage = globalCumulExpected > 0 ? ((globalCumulPresents / globalCumulExpected) * 100).toFixed(1) : 0;
+
+            return (
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-fadeIn print:shadow-none print:border-none print:p-0">
+                
+                {/* EN-TÊTE ÉCRAN */}
+                <div className="flex justify-between items-start mb-6 print:hidden">
+                  <div>
+                    <h2 className="text-xl font-semibold text-slate-800 mb-2 flex items-center"><IconBarChart3 className="w-5 h-5 mr-2 text-blue-600"/> Saisie et Bilan de Présence</h2>
+                    
+                    {/* Toggle de vue */}
+                    <div className="flex bg-gray-100 p-1 rounded-lg w-fit mt-3">
+                      <button 
+                        onClick={() => setStatsView('current')} 
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${statsView === 'current' ? 'bg-white shadow-sm text-blue-700 font-bold' : 'text-gray-600 hover:text-gray-900'}`}
+                      >
+                        Rencontre en cours
+                      </button>
+                      <button 
+                        onClick={() => setStatsView('cumulative')} 
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${statsView === 'cumulative' ? 'bg-white shadow-sm text-blue-700 font-bold' : 'text-gray-600 hover:text-gray-900'}`}
+                      >
+                        Bilan global cumulé
+                      </button>
+                    </div>
+                    
+                    {statsView === 'current' && <p className="text-sm text-gray-500 font-medium mt-3">Archivé pour : <span className="text-blue-800 font-bold">{eventData.title || 'Événement non nommé'}</span></p>}
+                    {statsView === 'cumulative' && <p className="text-sm text-gray-500 font-medium mt-3">Agrégation de <span className="text-blue-800 font-bold">{eventsList.length}</span> rencontre(s) archivée(s).</p>}
+                  </div>
+                  
+                  <button onClick={() => window.print()} className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition shadow-sm mt-2">
+                    <IconPrinter className="w-4 h-4 mr-2"/> Imprimer ce bilan
+                  </button>
+                </div>
+
+                {/* EN-TÊTE IMPRESSION (Masqué à l'écran) */}
+                <div className="hidden print:block mb-8">
+                  <div className="flex items-center justify-start mb-8 gap-8">
+                    {schoolInfo.logoImage && <img src={schoolInfo.logoImage} alt="Logo" className="h-24 max-w-xs object-contain" />}
+                    <span className="text-xl font-bold text-black uppercase tracking-wide">{schoolInfo.name}</span>
+                  </div>
+                  <h1 className="text-2xl font-bold text-center mb-2 uppercase tracking-wide">
+                    {statsView === 'cumulative' ? "BILAN DE PRÉSENCE CUMULÉ" : "BILAN DE PRÉSENCE DES FAMILLES"}
+                  </h1>
+                  <h2 className="text-xl text-center mb-8 pb-4 border-b-2 border-gray-300">
+                    {statsView === 'cumulative' ? "Synthèse de l'ensemble des rencontres" : `${eventData.title} ${eventData.date ? `- Date : ${formatDateFR(eventData.date)}` : ''}`}
+                  </h2>
+                </div>
+                
+                {/* TABLEAU DES STATISTIQUES : RENCONTRE EN COURS */}
+                {statsView === 'current' && (
+                  <div className="overflow-x-auto border border-gray-200 rounded-lg print:border-none print:overflow-visible">
+                    <table className="w-full text-sm text-left border-collapse print:border print:border-gray-400">
+                      <thead className="bg-slate-50 text-slate-700 border-b border-gray-200 print:bg-gray-100">
+                        <tr>
+                          <th className="p-4 border-r border-gray-100 print:border print:border-gray-400 w-32 md:w-48">Classe</th>
+                          <th className="p-4 border-r border-gray-100 text-center print:border print:border-gray-400">Effectif Total</th>
+                          <th className="p-4 border-r border-gray-100 text-center print:border print:border-gray-400">Parents Présents</th>
+                          <th className="p-4 text-center print:border print:border-gray-400">% Présence</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {eventData.selectedClasses.length === 0 && <tr><td colSpan="4" className="text-center p-8 text-gray-400 italic print:border print:border-gray-400">Sélectionnez des classes dans l'onglet "L'Événement" pour gérer les statistiques.</td></tr>}
+                        {eventData.selectedClasses.map(cid => {
+                          const classe = classes.find(c => c.id === cid);
+                          const stat = currentStats.find(s => s.classId === cid) || { presents: 0 };
+                          const percentage = classe?.effectif > 0 ? ((stat.presents / classe.effectif) * 100).toFixed(1) : 0;
+                          
+                          totalPresents += parseInt(stat.presents) || 0;
+                          totalEffectif += classe?.effectif || 0;
+
+                          return (
+                            <tr key={cid} className="border-b border-gray-100 hover:bg-slate-50 transition-colors print:border print:border-gray-400">
+                              <td className="p-4 font-bold text-blue-800 border-r border-gray-100 print:border print:border-gray-400 print:text-black">{classe?.name}</td>
+                              <td className="p-4 text-center border-r border-gray-100 print:border print:border-gray-400">{classe?.effectif}</td>
+                              <td className="p-4 text-center border-r border-gray-100 print:border print:border-gray-400">
+                                <input 
+                                  type="number" 
+                                  min="0"
+                                  max={classe?.effectif || 0}
+                                  value={stat.presents} 
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const newStats = [...currentStats];
+                                    const idx = newStats.findIndex(s => s.classId === cid);
+                                    if(idx >= 0) newStats[idx].presents = val;
+                                    else newStats.push({classId: cid, presents: val});
+                                    setEventData({...eventData, attendanceStats: newStats});
+                                  }}
+                                  className="w-24 text-center border border-gray-300 rounded-md p-1.5 focus:ring-blue-500 focus:border-blue-500 transition-all font-semibold print:border-none print:p-0 print:bg-transparent"
+                                />
+                              </td>
+                              <td className="p-4 text-center font-semibold print:border print:border-gray-400">
+                                <span className={`px-3 py-1.5 rounded-full text-xs shadow-sm print:shadow-none print:p-0 print:bg-transparent print:text-black ${percentage >= 70 ? 'bg-green-100 text-green-800' : percentage >= 40 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                                  {percentage}%
+                                </span>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                        {eventData.selectedClasses.length > 0 && (
+                          <tr className="bg-slate-800 text-white font-bold print:bg-gray-200 print:text-black">
+                            <td className="p-4 border-r border-slate-700 print:border print:border-gray-400">TOTAL / MOYENNE GLOBAL</td>
+                            <td className="p-4 text-center border-r border-slate-700 print:border print:border-gray-400">{totalEffectif}</td>
+                            <td className="p-4 text-center border-r border-slate-700 print:border print:border-gray-400">{totalPresents}</td>
+                            <td className="p-4 text-center text-lg text-blue-300 print:border print:border-gray-400 print:text-black">
+                              {totalEffectif > 0 ? ((totalPresents / totalEffectif) * 100).toFixed(1) : 0}%
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* TABLEAU DES STATISTIQUES : BILAN CUMULÉ */}
+                {statsView === 'cumulative' && (
+                  <div className="overflow-x-auto border border-gray-200 rounded-lg print:border-none print:overflow-visible">
+                    <table className="w-full text-sm text-left border-collapse print:border print:border-gray-400">
+                      <thead className="bg-slate-50 text-slate-700 border-b border-gray-200 print:bg-gray-100">
+                        <tr>
+                          <th className="p-4 border-r border-gray-100 print:border print:border-gray-400 w-32 md:w-48">Classe</th>
+                          <th className="p-4 border-r border-gray-100 text-center print:border print:border-gray-400">Nb Rencontres</th>
+                          <th className="p-4 border-r border-gray-100 text-center print:border print:border-gray-400">Cumul Attendus</th>
+                          <th className="p-4 border-r border-gray-100 text-center print:border print:border-gray-400">Cumul Présents</th>
+                          <th className="p-4 text-center print:border print:border-gray-400">Moyenne de Présence</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cumulatedStats.length === 0 && <tr><td colSpan="5" className="text-center p-8 text-gray-400 italic print:border print:border-gray-400">Aucune donnée disponible. Assurez-vous d'avoir associé des classes à vos rencontres.</td></tr>}
+                        {cumulatedStats.map(c => (
+                          <tr key={c.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors print:border print:border-gray-400">
+                            <td className="p-4 font-bold text-blue-800 border-r border-gray-100 print:border print:border-gray-400 print:text-black">{c.name}</td>
+                            <td className="p-4 text-center border-r border-gray-100 print:border print:border-gray-400">{c.participationCount}</td>
+                            <td className="p-4 text-center border-r border-gray-100 print:border print:border-gray-400">{c.totalExpected}</td>
+                            <td className="p-4 text-center border-r border-gray-100 font-semibold print:border print:border-gray-400">{c.totalPresentsCumul}</td>
+                            <td className="p-4 text-center font-semibold print:border print:border-gray-400">
+                              <span className={`px-3 py-1.5 rounded-full text-xs shadow-sm print:shadow-none print:p-0 print:bg-transparent print:text-black ${c.percentage >= 70 ? 'bg-green-100 text-green-800' : c.percentage >= 40 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                                {c.percentage}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {cumulatedStats.length > 0 && (
+                          <tr className="bg-slate-800 text-white font-bold print:bg-gray-200 print:text-black">
+                            <td className="p-4 border-r border-slate-700 print:border print:border-gray-400" colSpan="2">TOTAL ANNUEL / MOYENNE GLOBALE</td>
+                            <td className="p-4 text-center border-r border-slate-700 print:border print:border-gray-400">{globalCumulExpected}</td>
+                            <td className="p-4 text-center border-r border-slate-700 print:border print:border-gray-400">{globalCumulPresents}</td>
+                            <td className="p-4 text-center text-lg text-blue-300 print:border print:border-gray-400 print:text-black">
+                              {globalCumulPercentage}%
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                    
+                    {cumulatedStats.length > 0 && (
+                      <div className="p-4 text-xs text-gray-500 italic print:text-black">
+                        * Le "Cumul Attendus" correspond à l'effectif de la classe multiplié par le nombre de rencontres auxquelles elle a participé.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          };
+
+          const renderPrintTab = () => (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm print:hidden">
+                <div className="text-sm font-bold text-slate-800">
+                  Documents pour : <span className="text-blue-600">{eventData.title || 'Rencontre sans titre'}</span>
+                </div>
+                <div className="flex space-x-4">
+                  <button onClick={() => handlePrint('program')} className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition shadow-sm">
+                    <IconPrinter className="w-4 h-4 mr-2"/> Imprimer le Programme
+                  </button>
+                  <button onClick={() => handlePrint('emargement')} className="flex items-center bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition shadow-sm">
+                    <IconUsers className="w-4 h-4 mr-2"/> Imprimer l'Émargement
+                  </button>
+                </div>
+              </div>
+
+              <div id="print-area" className="bg-transparent text-black max-w-4xl mx-auto space-y-12">
+                
+                {/* DOCUMENT 1 : PROGRAMME */}
+                <div className={`bg-white p-10 shadow-lg print:shadow-none print:p-0 ${printMode === 'emargement' ? 'hidden print:hidden' : 'block'}`} style={{fontFamily: 'Arial, sans-serif'}}>
+                  {/* HEADER DOCUMENT */}
+                  <div className="flex items-center justify-start mb-8 gap-8">
+                    {schoolInfo.logoImage && <img src={schoolInfo.logoImage} alt="Logo" className="h-32 max-w-xs object-contain" />}
+                    <span className="text-2xl font-bold text-black uppercase tracking-wide">{schoolInfo.name}</span>
+                  </div>
+
+                  <h1 className="text-2xl font-bold text-center mb-2 uppercase tracking-wide">{eventData.title}</h1>
+                  {eventData.date && <h2 className="text-xl text-center mb-8 pb-4 border-b-2 border-gray-300">Date : {formatDateFR(eventData.date)}</h2>}
+
+                  {/* DÉROULEMENT ET TABLES INTÉGRÉES */}
+                  {eventData.parts.length > 0 && (
+                    <>
+                      <h3 className="text-lg font-bold bg-gray-200 p-2 mb-6">DÉROULEMENT DE LA RENCONTRE ET RÉPARTITION</h3>
+                      <div className="space-y-10 mb-8">
+                        {eventData.parts.map(part => (
+                          <div key={part.id} className="break-inside-avoid">
+                            
+                            {/* En-tête de l'étape : Horaires et Description */}
+                            <div className="flex gap-4 mb-4">
+                              <div className="w-36 font-bold text-left pt-1 shrink-0 text-base">{part.startTime} - {part.endTime}</div>
+                              <div className="flex-1">
+                                <p className="font-bold underline mb-1 text-base">{part.title}</p>
+                                <p className="text-left text-sm whitespace-pre-line leading-relaxed">{part.description}</p>
+                                
+                                {part.type === 'regroupement' && (
+                                  <div className="mt-3 text-sm bg-gray-50 p-3 rounded border border-gray-200 inline-block">
+                                    <span className="font-bold mr-2">📍 Salle :</span> {getRoomName(part.regroupementRoom)} <br/>
+                                    <span className="font-bold mr-2">👥 Classes concernées :</span> {part.regroupementClasses || 'Non précisées'}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Insertion dynamique des tableaux (Pleine largeur) */}
+                            {part.type === 'par_classe' && eventData.selectedClasses.length > 0 && (
+                              <table className="w-full text-sm border-collapse border border-gray-400">
+                                <thead>
+                                  <tr className="bg-gray-100">
+                                    <th className="border border-gray-400 p-2 text-center">DIVISION</th>
+                                    <th className="border border-gray-400 p-2 text-center">PROF. PRINCIPAL</th>
+                                    <th className="border border-gray-400 p-2 text-center">SALLE</th>
+                                    <th className="border border-gray-400 p-2 text-center">ACCOMPAGNATEURS</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {eventData.selectedClasses.map(cid => {
+                                     const placement = eventData.classPlacements.find(p => p.classId === cid) || {};
+                                     const classe = classes.find(c => c.id === cid);
+                                     return (
+                                       <tr key={cid}>
+                                         <td className="border border-gray-400 p-2 text-center font-bold">{classe?.name}</td>
+                                         <td className="border border-gray-400 p-2 text-center">
+                                           {placement.substitutePpId ? (
+                                             <>
+                                               <span className="line-through text-gray-500">{getTeacherName(classe?.ppId)}</span>
+                                               <br />
+                                               <span className="font-bold">{getTeacherName(placement.substitutePpId)} (Remplaçant)</span>
+                                             </>
+                                           ) : (
+                                             getTeacherName(classe?.ppId)
+                                           )}
+                                         </td>
+                                         <td className="border border-gray-400 p-2 text-center">{getRoomName(placement.roomId)}</td>
+                                         <td className="border border-gray-400 p-2 text-center text-xs">{(placement.accompIds || []).map(id => getTeacherName(id)).join(' - ')}</td>
+                                       </tr>
+                                     )
+                                  })}
+                                </tbody>
+                              </table>
+                            )}
+
+                            {part.type === 'par_discipline' && eventData.subjectRooms.length > 0 && (
+                              <table className="w-full text-sm border-collapse border border-gray-400">
+                                <thead>
+                                  <tr className="bg-gray-100">
+                                    <th className="border border-gray-400 p-2 text-center">CHAMP / DISCIPLINE</th>
+                                    <th className="border border-gray-400 p-2 text-center">PROFESSEURS PRÉSENTS</th>
+                                    <th className="border border-gray-400 p-2 text-center">SALLE</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {eventData.subjectRooms.map((sr, idx) => (
+                                    <tr key={idx}>
+                                      <td className="border border-gray-400 p-2 text-center font-bold">{sr.subject}</td>
+                                      <td className="border border-gray-400 p-2 text-center text-xs">{(sr.teacherIds || []).map(id => getTeacherName(id)).join(' - ')}</td>
+                                      <td className="border border-gray-400 p-2 text-center">{getRoomName(sr.roomId)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  <div className="mt-12 flex flex-col items-end pr-12 text-sm whitespace-pre-line font-bold">
+                    <div>{schoolInfo.cachet}</div>
+                    {schoolInfo.cachetImage && <img src={schoolInfo.cachetImage} alt="Cachet" className="mt-4 h-32 object-contain" />}
+                  </div>
+                </div>
+
+                {/* DOCUMENT 2 : EMARGEMENT */}
+                <div className={`bg-white p-10 shadow-lg print:shadow-none print:p-0 ${printMode === 'program' ? 'hidden print:hidden' : 'block'}`} style={{fontFamily: 'Arial, sans-serif'}}>
+                  {/* En-tête indépendant pour l'émargement */}
+                  <div className="flex items-center justify-start mb-6 gap-8">
+                    {schoolInfo.logoImage && <img src={schoolInfo.logoImage} alt="Logo" className="h-24 max-w-xs object-contain" />}
+                    <span className="text-xl font-bold text-black uppercase tracking-wide">{schoolInfo.name}</span>
+                  </div>
+                  
+                  <h1 className="text-2xl font-bold text-center mb-4 uppercase tracking-wide">LISTE D'ÉMARGEMENT</h1>
+                  <h2 className="text-lg text-center mb-8">{eventData.title} {eventData.date && `- Date : ${formatDateFR(eventData.date)}`}</h2>
+                  
+                  <table className="w-full text-sm border-collapse border border-gray-400">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="border border-gray-400 p-2 w-1/2 text-left">NOM DU PROFESSEUR</th>
+                        <th className="border border-gray-400 p-2 w-1/2 text-center">SIGNATURE (PRÉSENCE)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {teachers.filter(t => !(eventData.excludedTeachers || []).includes(t.id)).sort((a, b) => (a.nom || '').localeCompare(b.nom || '')).map((t) => (
+                        <tr key={t.id}>
+                          <td className="border border-gray-400 p-3 font-semibold">{t.name}</td>
+                          <td className="border border-gray-400 p-3"></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            </div>
+          );
+
+          const renderPochettesTab = () => {
+            const subjectRooms = eventData.subjectRooms || [];
+            
+            // Récupération automatique de l'horaire pour la phase 'par_discipline'
+            const disciplinePart = eventData.parts.find(p => p.type === 'par_discipline');
+            const formatTimeStr = (t) => t ? t.replace(':', 'h') : '';
+            const timeDisplay = disciplinePart && disciplinePart.startTime && disciplinePart.endTime
+              ? `De ${formatTimeStr(disciplinePart.startTime)} à ${formatTimeStr(disciplinePart.endTime)}`
+              : '';
+
+            return (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm print:hidden">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800">Affiches pour portes de salles (Rencontre par Discipline)</h2>
+                    <p className="text-sm text-gray-500">Aperçu en format A4 réel. Visualisez exactement ce qui sortira de l'imprimante.</p>
+                  </div>
+                  <button onClick={() => window.print()} className="flex items-center bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm font-bold">
+                    <IconPrinter className="w-5 h-5 mr-2"/> Imprimer les affiches
+                  </button>
+                </div>
+
+                {subjectRooms.length === 0 && (
+                  <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center print:hidden">
+                    <IconFolder className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg">Aucune répartition par discipline n'a été configurée pour cet événement.</p>
+                    <button onClick={() => setActiveTab('event')} className="mt-4 text-blue-600 hover:underline font-semibold">Aller dans "L'Événement" pour configurer la grille</button>
+                  </div>
+                )}
+
+                {/* Conteneur gris simulant un bureau pour les feuilles A4 */}
+                <div className="bg-slate-200 p-8 rounded-xl overflow-x-auto print:bg-transparent print:p-0 print:overflow-visible">
+                  <div className="flex flex-col space-y-12 print:space-y-0 items-center print:items-stretch">
+                    
+                    {subjectRooms.map((sr, idx) => {
+                      // Algorithme d'adaptation intelligente de la taille du texte de la salle
+                      const roomName = getRoomName(sr.roomId);
+                      let roomSizeClass = "text-[6rem] md:text-[7rem]"; // Très court (ex: D15)
+                      if (roomName.length > 18) roomSizeClass = "text-[2rem] md:text-[2.5rem]"; // Extrêmement long
+                      else if (roomName.length > 13) roomSizeClass = "text-[2.5rem] md:text-[3.5rem]"; // Long (ex: SALLE ETUDE 1)
+                      else if (roomName.length > 8) roomSizeClass = "text-[3.5rem] md:text-[4.5rem]"; // Moyen (ex: B02 Labo)
+                      else if (roomName.length > 4) roomSizeClass = "text-[4.5rem] md:text-[5.5rem]"; // Court (ex: D04 S.)
+
+                      return (
+                      /* Simulation exacte d'une feuille A4 (210x297mm) */
+                      <div key={sr.id || idx} 
+                           className="bg-white shadow-2xl flex flex-col relative overflow-hidden print:shadow-none print:border-none border border-gray-300 shrink-0" 
+                           style={{ width: '210mm', height: '297mm', pageBreakAfter: 'always', pageBreakInside: 'avoid' }}>
+                        
+                        {/* En-tête institutionnel repensé : Logo seul en haut à gauche */}
+                        <div className="w-full px-12 pt-10 opacity-90 shrink-0">
+                          {schoolInfo.logoImage && <img src={schoolInfo.logoImage} alt="Logo" className="h-32 max-w-full object-contain" />}
+                        </div>
+
+                        {/* Contenu central de l'affiche */}
+                        <div className="flex-1 flex flex-col items-center justify-start pt-4 pb-8">
+                          
+                          {/* Titres centrés au-dessus de la salle, pleine largeur, SANS rognage */}
+                          <div className="w-full text-center px-12 mb-10">
+                            <div className="font-black text-3xl md:text-[2.2rem] uppercase text-slate-900 leading-tight">
+                              {schoolInfo.name}
+                            </div>
+                            <div className="font-bold text-2xl text-slate-700 mt-3 leading-snug">
+                              {eventData.title} {eventData.date && `- ${formatDateFR(eventData.date)}`}
+                            </div>
+                          </div>
+
+                          <div className="text-gray-500 uppercase tracking-widest font-bold mb-2 text-2xl">Salle</div>
+                          <div className={`${roomSizeClass} w-full px-8 font-black text-slate-900 mb-6 uppercase tracking-wider leading-none text-center break-words`}>
+                            {roomName}
+                          </div>
+                          
+                          {timeDisplay && (
+                            <div className="text-2xl font-bold text-indigo-800 bg-indigo-50 border border-indigo-100 px-8 py-3 rounded-full mb-10 shadow-sm">
+                              ⏱️ {timeDisplay}
+                            </div>
+                          )}
+                          
+                          <div className="w-1/2 h-2 bg-indigo-600 mx-auto mb-10 rounded-full shrink-0"></div>
+                          
+                          <div className="text-[3.5rem] font-extrabold text-indigo-900 mb-10 uppercase text-center leading-tight px-8">
+                            {sr.subject}
+                          </div>
+                          
+                          {/* Grille flex-wrap pour éviter le débordement vertical */}
+                          <div className="flex flex-wrap justify-center gap-4 w-full px-12">
+                            {(sr.teacherIds || []).map(id => (
+                              <div key={id} className="bg-slate-50 px-6 py-3 rounded-xl border border-slate-200 shadow-sm text-2xl font-medium text-slate-700">
+                                {getTeacherName(id)}
+                              </div>
+                            ))}
+                            {(!sr.teacherIds || sr.teacherIds.length === 0) && <div className="italic text-gray-400 border border-dashed border-gray-300 p-4 rounded-xl text-xl">Aucun professeur assigné</div>}
+                          </div>
+                        </div>
+
+                      </div>
+                    );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          };
+
+          const renderGuideTab = () => (
+            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 animate-fadeIn max-w-4xl mx-auto print:hidden">
+              <h2 className="text-2xl font-bold text-blue-900 mb-6 flex items-center border-b pb-4">
+                <IconHelp className="w-8 h-8 mr-3 text-blue-600"/> 
+                Guide d'Utilisation : PERDIRFORMANCE LOGI-RPP
+              </h2>
+              
+              <div className="space-y-8 text-slate-700">
+                {/* Intro */}
+                <section className="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                  <h3 className="font-bold text-blue-800 mb-2 flex items-center text-lg">🛡️ Conformité RGPD & Sécurité</h3>
+                  <p className="text-sm leading-relaxed">
+                    <strong>100% Local :</strong> Ce progiciel fonctionne entièrement dans votre navigateur web. Aucune donnée (noms des élèves, personnels, statistiques) ne transite sur internet. Tout reste stocké sur la machine locale de l'utilisateur, garantissant une conformité absolue aux exigences RGPD de l'Éducation Nationale.
+                  </p>
+                </section>
+
+                <section>
+                  <h3 className="font-bold text-lg text-slate-800 border-b border-gray-200 pb-2 mb-3">💾 1. Gestion des Sauvegardes</h3>
+                  <p className="text-sm leading-relaxed mb-2">Bien que le logiciel mémorise vos actions, il est <strong>impératif d'effectuer des sauvegardes régulières</strong> (barre supérieure à droite).</p>
+                  <ul className="list-disc pl-5 text-sm space-y-1 text-gray-600">
+                    <li><strong>Sauvegarder :</strong> Exporte vos données dans un fichier <code>.json</code>. Vous pouvez le nommer librement (ex: <i>RPP_Trimestre1</i>).</li>
+                    <li><strong>Importer :</strong> Permet de recharger un fichier précédemment sauvegardé.</li>
+                    <li><strong>Réinitialiser :</strong> Efface toutes les données pour repartir d'une feuille vierge.</li>
+                  </ul>
+                </section>
+
+                <section>
+                  <h3 className="font-bold text-lg text-slate-800 border-b border-gray-200 pb-2 mb-3">⚙️ 2. Onglet "Configuration"</h3>
+                  <p className="text-sm leading-relaxed mb-3">C'est ici que vous importez les bases de données de votre EPLE. Utilisez le bouton <span className="inline-block px-2 py-0.5 bg-blue-600 text-white rounded text-xs font-bold mx-1">📥 Importer</span> pour charger vos fichiers CSV ou Excel.</p>
+                  <ul className="list-disc pl-5 text-sm space-y-2 text-gray-600">
+                    <li><strong>Classes :</strong> Format attendu : <i>Classe; Effectif; Nom du PP</i>.</li>
+                    <li>
+                      <strong>Professeurs :</strong> <br/>
+                      <span className="inline-block mt-1 p-2 bg-indigo-50 border border-indigo-100 rounded text-indigo-800">
+                        <strong>✨ Import "Tout-Terrain" :</strong> Le logiciel s'adapte à vos fichiers bruts (STS Web, SIÈCLE, Pronote). Il détecte automatiquement les colonnes, ignore les en-têtes et nettoie les codes matières techniques (ex: <i>L1000 HIST. GEO.</i> devient <i>Histoire-Géographie</i>).
+                      </span>
+                    </li>
+                    <li><strong>Salles :</strong> Format attendu : <i>Nom de la salle</i>.</li>
+                  </ul>
+                </section>
+
+                <section>
+                  <h3 className="font-bold text-lg text-slate-800 border-b border-gray-200 pb-2 mb-3">📅 3. Onglet "L'Événement"</h3>
+                  <p className="text-sm leading-relaxed mb-2">Construisez ici le scénario de votre rencontre. Les dates s'affichent et s'impriment exactement telles que saisies.</p>
+                  <ul className="list-disc pl-5 text-sm space-y-2 text-gray-600">
+                    <li><strong>Duplication 📑 :</strong> Utilisez l'icône de "copie" pour dupliquer une rencontre (ex: passage au Semestre 2). L'ossature est conservée, mais les salles, accompagnateurs et statistiques sont libérés pour le nouvel événement.</li>
+                    <li><strong>Grille par Classe :</strong> Affectez les salles. Utilisez le bouton <i>🪄 Trier auto.</i> pour ranger instantanément les classes par niveau (6ème avant 5ème) ou les flèches pour un tri manuel.</li>
+                    <li><strong>Grille par Discipline :</strong> Cliquez sur <i>🪄 Générer auto.</i> pour regrouper les professeurs avec un tri académique standardisé (Sciences, Lettres, Langues...).</li>
+                    <li><span className="text-red-600 font-medium">⚠️ Sécurité Anti-Doublon :</span> Dès qu'une salle est affectée, elle devient grisée et marquée "(Occupée)" dans les autres listes.</li>
+                  </ul>
+                </section>
+
+                <section>
+                  <h3 className="font-bold text-lg text-slate-800 border-b border-gray-200 pb-2 mb-3">👥 4. Émargement & 📊 5. Statistiques</h3>
+                  <ul className="list-disc pl-5 text-sm space-y-2 text-gray-600">
+                    <li><strong>Émargement :</strong> Décochez les professeurs absents. <i>Vos choix sont sauvegardés individuellement pour chaque rencontre.</i></li>
+                    <li><strong>Statistiques & Bilan Cumulé :</strong> Saisissez le nombre de parents présents (pourcentages et couleurs dynamiques). Nouveauté : Utilisez le sélecteur d'affichage pour consulter le <strong>Bilan global cumulé</strong>, qui agrège automatiquement la participation sur l'année complète (idéal pour la présentation en CA).</li>
+                  </ul>
+                </section>
+
+                <section>
+                  <h3 className="font-bold text-lg text-slate-800 border-b border-gray-200 pb-2 mb-3">🖨️ 6. Impressions (Aperçu, Émargement, Pochettes)</h3>
+                  <p className="text-sm leading-relaxed mb-3">
+                    Le logiciel met en page automatiquement vos saisies sous la forme de documents institutionnels PDF.
+                  </p>
+                  <ul className="list-disc pl-5 text-sm space-y-2 text-gray-600">
+                    <li><strong>Aperçu & Impression :</strong> Génère le programme global de la soirée et la feuille d'émargement officielle avec votre logo.</li>
+                    <li><strong>Pochettes Salles :</strong> Génère de très grandes affiches (1 par page A4) avec le nom de la salle, la matière, les professeurs, et l'intégration <strong>automatique de l'horaire</strong>. Un format anti-débordement garantit une impression parfaite !</li>
+                  </ul>
+                </section>
+
+              </div>
+            </div>
+          );
+
+          const tabs = [
+            { id: 'config', label: 'Configuration', icon: IconSettings },
+            { id: 'event', label: 'L\'Événement', icon: IconCalendar },
+            { id: 'emargement', label: 'Émargement', icon: IconUsers },
+            { id: 'stats', label: 'Statistiques', icon: IconBarChart3 },
+            { id: 'print', label: 'Aperçu & Impression', icon: IconFileText },
+            { id: 'pochettes', label: 'Pochettes Salles', icon: IconFolder },
+            { id: 'guide', label: 'Guide', icon: IconHelp }
+          ];
+
+          return (
+            <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 font-sans print:bg-white print:m-0">
+              {/* HEADER / NAVIGATION */}
+              <header className="bg-blue-900 text-white shadow-md print:hidden sticky top-0 z-20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex flex-col sm:flex-row justify-between sm:h-16 items-center py-3 sm:py-0 gap-3">
+                    <div className="flex items-center">
+                      <span className="font-bold text-2xl tracking-tight">PERDIRFORMANCE <span className="text-blue-200 font-light text-xl">LOGI-RPP V2</span></span>
+                    </div>
+                    <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                      <button onClick={handleResetAll} className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded flex items-center transition-colors shadow-sm whitespace-nowrap border border-red-500/50">
+                        🔄 Réinitialiser
+                      </button>
+                      <label className="animate-pulse-blue text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded flex items-center transition-colors cursor-pointer shadow-sm border border-blue-500/50 whitespace-nowrap">
+                        📥 Importer
+                        <input type="file" accept=".json" className="hidden" onChange={handleImportBackup} />
+                      </label>
+                      <button onClick={handleExportBackup} className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded flex items-center transition-colors shadow-sm border border-blue-500/50 whitespace-nowrap">
+                        💾 Sauvegarder
+                      </button>
+                    </div>
+                  </div>
+                  <nav className="flex space-x-1 overflow-x-auto pb-2 mt-2">
+                    {tabs.map(tab => {
+                      const Icon = tab.icon;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id)}
+                          className={`flex items-center px-5 py-2.5 text-base font-semibold rounded-t-lg transition-colors whitespace-nowrap ${
+                            activeTab === tab.id 
+                              ? 'bg-slate-50 text-blue-700 shadow-sm' 
+                              : 'text-blue-100 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          <Icon className="w-5 h-5 mr-2" />
+                          {tab.label}
+                        </button>
+                      )
+                    })}
+                  </nav>
+                </div>
+              </header>
+
+              {/* MAIN CONTENT */}
+              <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-0 print:max-w-none">
+                {activeTab === 'config' && renderConfigTab()}
+                {activeTab === 'event' && renderEventTab()}
+                {activeTab === 'emargement' && renderEmargementTab()}
+                {activeTab === 'stats' && renderStatsTab()}
+                {activeTab === 'print' && renderPrintTab()}
+                {activeTab === 'pochettes' && renderPochettesTab()}
+                {activeTab === 'guide' && renderGuideTab()}
+              </main>
+
+              {/* FOOTER LOGICIEL (Visible uniquement à l'écran) */}
+              <footer className="bg-slate-100 border-t border-slate-200 py-4 text-center print:hidden mt-auto">
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                  Proposé par Yannis CHRISTON <span className="mx-2 text-slate-300">|</span> Fonctionnement en local RGPD
+                </p>
+              </footer>
+            </div>
+          );
+        }
+
+        // Rendu final React
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
