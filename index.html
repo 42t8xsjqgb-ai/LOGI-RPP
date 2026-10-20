@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PERDIRFORMANCE LOGI-RPP V2</title>
+    <title>PERDIRFORMANCE LOGI-RPP V3</title>
     
     <!-- Script pour masquer les avertissements de développement liés au mode "sans serveur" (Babel et Tailwind) -->
     <script>
@@ -62,7 +62,7 @@
     <!-- Point d'ancrage de l'application -->
     <div id="root">
         <div style="text-align: center; padding: 50px; font-family: sans-serif; color: #1e3a8a;">
-            Chargement sécurisé de PERDIRFORMANCE LOGI-RPP V2...
+            Chargement sécurisé de PERDIRFORMANCE LOGI-RPP V3...
         </div>
     </div>
 
@@ -203,7 +203,12 @@
           };
 
           const handleExportBackup = () => {
-            const defaultName = `PERDIRFORMANCE_Sauvegarde_${new Date().toISOString().split('T')[0]}`;
+            const now = new Date();
+            const jj = String(now.getDate()).padStart(2, '0');
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const aaaa = now.getFullYear();
+            const heure = `${String(now.getHours()).padStart(2, '0')}h${String(now.getMinutes()).padStart(2, '0')}`;
+            const defaultName = `RPP_${jj}${mm}${aaaa}_${heure}`;
             let fileName = window.prompt("Nommez votre fichier de sauvegarde :", defaultName);
             if (fileName === null) return;
             if (fileName.trim() === '') fileName = defaultName;
@@ -282,9 +287,14 @@
 
           const getAllSelectedAccompIds = () => {
             const allIds = new Set();
+            eventData.selectedClasses.forEach(cid => {
+              const cls = classes.find(c => c.id === cid);
+              if (cls && cls.ppId) allIds.add( parseInt(cls.ppId) );
+            });
             eventData.classPlacements.forEach(p => {
+              if (p.substitutePpId) allIds.add( parseInt(p.substitutePpId) );
               if (p.accompIds) {
-                p.accompIds.forEach(id => allIds.add(id));
+                p.accompIds.forEach(id => allIds.add( parseInt(id) ));
               }
             });
             return Array.from(allIds);
@@ -1062,7 +1072,7 @@
                     </div>
                     <table className="w-full text-sm text-left">
                       <thead className="bg-gray-50 text-gray-600 border-b">
-                        <tr><th className="p-2">Classe</th><th className="p-2 w-1/4">PP</th><th className="p-2 w-1/4">Salle</th><th className="p-2 w-1/3">Accompagnateurs (Max 3)</th><th className="p-2 w-12 text-center">Actions</th></tr>
+                        <tr><th className="p-2">Classe</th><th className="p-2 w-1/4">PP</th><th className="p-2 w-1/4">Salle</th><th className="p-2 w-1/3">Accompagnateurs</th><th className="p-2 w-12 text-center">Actions</th></tr>
                       </thead>
                       <tbody>
                         {eventData.selectedClasses.length === 0 && <tr><td colSpan="5" className="text-center p-4 text-gray-400 italic">Veuillez sélectionner des classes ci-dessus</td></tr>}
@@ -1094,8 +1104,11 @@
                                     className="w-full max-w-[140px] p-1 border border-gray-300 rounded bg-white focus:ring-blue-500"
                                   >
                                     <option value="">Remplaçant si absent...</option>
-                                    {[...teachers].sort((a,b) => (a.nom || '').localeCompare(b.nom || '')).map(t => (
-                                      <option key={t.id} value={t.id}>{t.civ} {t.nom}</option>
+                                    {[...teachers]
+                                      .filter(t => !allUsedAccomp.includes(t.id) || placement.substitutePpId === t.id)
+                                      .sort((a,b) => (a.nom || '').localeCompare(b.nom || ''))
+                                      .map(t => (
+                                        <option key={t.id} value={t.id}>{t.civ} {t.nom}</option>
                                     ))}
                                   </select>
                                 </div>
@@ -1143,32 +1156,30 @@
                                     </span>
                                   ))}
                                 </div>
-                                {currentAccompIds.length < 3 && (
-                                  <select
-                                    value=""
-                                    onChange={(e) => {
-                                      if(!e.target.value) return;
-                                      const tId = parseInt(e.target.value);
-                                      const newPlacements = [...eventData.classPlacements];
-                                      const idxPlacement = newPlacements.findIndex(p => p.classId === cid);
-                                      if (idxPlacement >= 0) {
-                                        newPlacements[idxPlacement].accompIds = [...(newPlacements[idxPlacement].accompIds || []), tId];
-                                      } else {
-                                        newPlacements.push({ classId: cid, roomId: '', accompIds: [tId] });
-                                      }
-                                      setEventData({...eventData, classPlacements: newPlacements});
-                                    }}
-                                    className="w-full p-1 border border-gray-300 rounded text-xs focus:ring-blue-500 bg-white text-gray-500"
-                                  >
-                                    <option value="">+ Ajouter un prof...</option>
-                                    {[...teachers]
-                                      .filter(t => !allUsedAccomp.includes(t.id)) // Exclusivité
-                                      .sort((a,b) => (a.nom || '').localeCompare(b.nom || ''))
-                                      .map(t => (
-                                        <option key={t.id} value={t.id}>{t.civ} {t.nom}</option>
-                                    ))}
-                                  </select>
-                                )}
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    if(!e.target.value) return;
+                                    const tId = parseInt(e.target.value);
+                                    const newPlacements = [...eventData.classPlacements];
+                                    const idxPlacement = newPlacements.findIndex(p => p.classId === cid);
+                                    if (idxPlacement >= 0) {
+                                      newPlacements[idxPlacement].accompIds = [...(newPlacements[idxPlacement].accompIds || []), tId];
+                                    } else {
+                                      newPlacements.push({ classId: cid, roomId: '', accompIds: [tId] });
+                                    }
+                                    setEventData({...eventData, classPlacements: newPlacements});
+                                  }}
+                                  className="w-full p-1 border border-gray-300 rounded text-xs focus:ring-blue-500 bg-white text-gray-500"
+                                >
+                                  <option value="">+ Ajouter un prof...</option>
+                                  {[...teachers]
+                                    .filter(t => !allUsedAccomp.includes(t.id)) // Exclusivité
+                                    .sort((a,b) => (a.nom || '').localeCompare(b.nom || ''))
+                                    .map(t => (
+                                      <option key={t.id} value={t.id}>{t.civ} {t.nom}</option>
+                                  ))}
+                                </select>
                               </td>
                               <td className="p-2 align-top">
                                 <div className="flex flex-col items-center gap-1">
@@ -2016,7 +2027,7 @@
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="flex flex-col sm:flex-row justify-between sm:h-16 items-center py-3 sm:py-0 gap-3">
                     <div className="flex items-center">
-                      <span className="font-bold text-2xl tracking-tight">PERDIRFORMANCE <span className="text-blue-200 font-light text-xl">LOGI-RPP V2</span></span>
+                      <span className="font-bold text-2xl tracking-tight">PERDIRFORMANCE <span className="text-blue-200 font-light text-xl">LOGI-RPP V3</span></span>
                     </div>
                     <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
                       <button onClick={handleResetAll} className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded flex items-center transition-colors shadow-sm whitespace-nowrap border border-red-500/50">
